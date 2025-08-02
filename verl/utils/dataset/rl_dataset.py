@@ -36,15 +36,14 @@ logger = logging.getLogger(__name__)
 
 def collate_fn(data_list: list[dict]) -> dict:
     """
-    Collate a batch of sample dicts into batched tensors and arrays.
+    サンプル辞書のバッチをバッチ化されたテンソルと配列に結合します。
 
     Args:
-        data_list: List of dicts mapping feature names to torch.Tensor or other values.
+        data_list: 特徴名を torch.Tensor またはその他の値にマッピングする辞書のリスト。
 
     Returns:
-        Dict where tensor entries are stacked into a torch.Tensor of shape
-        (batch_size, \*dims) and non-tensor entries are converted to
-        np.ndarray of dtype object with shape (batch_size,).
+        テンソルエントリが (batch_size, \*dims) 形状の torch.Tensor にスタックされ、
+        非テンソルエントリが (batch_size,) 形状の dtype object の np.ndarray に変換された辞書。
     """
     tensors = defaultdict(list)
     non_tensors = defaultdict(list)
@@ -67,19 +66,19 @@ def collate_fn(data_list: list[dict]) -> dict:
 
 class RLHFDataset(Dataset):
     """
-    Load and preprocess RLHF data from Parquet files.
+    Parquet ファイルから RLHF データを読み込み、前処理を行います。
 
-    - Caches files locally.
-    - Reads into a HuggingFace Dataset and tokenizes prompts.
-    - Optionally handles images/videos via a ProcessorMixin.
-    - Filters prompts over a max length.
-    - Supports resuming from checkpoints.
+    - ファイルをローカルにキャッシュします。
+    - HuggingFace Dataset に読み込み、プロンプトをトークン化します。
+    - ProcessorMixin を介して画像/動画をオプションで処理します。
+    - 最大長を超えるプロンプトをフィルタリングします。
+    - チェックポイントからの再開をサポートします。
 
     Args:
-        data_files (str or list): Path(s) to Parquet file(s).
-        tokenizer (PreTrainedTokenizer): For the tokenization of text to token IDs.
-        config (DictConfig): Options like cache_dir, prompt_key, max_prompt_length, truncation, etc.
-        processor (ProcessorMixin, optional): Multimodal preprocessor for images/videos.
+        data_files (str or list): Parquet ファイルへのパス。
+        tokenizer (PreTrainedTokenizer): テキストをトークン ID にトークン化するためのトークナイザー。
+        config (DictConfig): cache_dir、prompt_key、max_prompt_length、truncation などのオプション。
+        processor (ProcessorMixin, optional): 画像/動画用のマルチモーダル前処理器。
     """
 
     def __init__(
@@ -93,7 +92,7 @@ class RLHFDataset(Dataset):
             data_files = [data_files]
 
         self.data_files = copy.deepcopy(data_files)
-        self.original_data_files = copy.deepcopy(data_files)  # use for resume
+        self.original_data_files = copy.deepcopy(data_files)  # 再開時に使用
         self.tokenizer = tokenizer
         self.processor = processor
         self.config = config
@@ -130,7 +129,6 @@ class RLHFDataset(Dataset):
     def _read_files_and_tokenize(self):
         dataframes = []
         for parquet_file in self.data_files:
-            # read parquet files and cache
             dataframe = datasets.load_dataset("parquet", data_files=parquet_file)["train"]
             dataframes.append(dataframe)
         self.dataframe: datasets.Dataset = datasets.concatenate_datasets(dataframes)
@@ -140,7 +138,6 @@ class RLHFDataset(Dataset):
         self.dataframe = self.maybe_filter_out_long_prompts(self.dataframe)
 
     def maybe_filter_out_long_prompts(self, dataframe: datasets.Dataset = None):
-        # filter out too long prompts
         if self.filter_overlong_prompts:
             tokenizer = self.tokenizer
             processor = self.processor
@@ -177,9 +174,8 @@ class RLHFDataset(Dataset):
 
     def resume_dataset_state(self):
         self.serialize_dataset = not hasattr(self, "original_data_files")
-        # resume dataframe if not it's serialized in data.pt
         if not self.serialize_dataset:
-            self._download(use_origin_parquet=True)  # download and resume from original parquet files
+            self._download(use_origin_parquet=True)  # 元の parquet ファイルからダウンロードして再開
             self._read_files_and_tokenize()
         else:
             print(r"old dataloader ckpt file is used, please train from scratch for better ckpt performance")

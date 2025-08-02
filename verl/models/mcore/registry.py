@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Registry module for model architecture components.
+モデルアーキテクチャコンポーネントのレジストリモジュール。
 """
 
 from enum import Enum
@@ -61,18 +61,17 @@ from .weight_converter import (
 
 
 class SupportedModel(Enum):
-    LLAMA = "LlamaForCausalLM"  # tested
-    QWEN2 = "Qwen2ForCausalLM"  # tested
-    QWEN2_MOE = "Qwen2MoeForCausalLM"  # pending
-    DEEPSEEK_V3 = "DeepseekV3ForCausalLM"  # not tested
-    MIXTRAL = "MixtralForCausalLM"  # tested
-    QWEN2_5_VL = "Qwen2_5_VLForConditionalGeneration"  # not supported
-    LLAMA4 = "Llama4ForConditionalGeneration"  # not tested
-    QWEN3 = "Qwen3ForCausalLM"  # tested
-    QWEN3_MOE = "Qwen3MoeForCausalLM"  # not tested
+    LLAMA = "LlamaForCausalLM"  # テスト済み
+    QWEN2 = "Qwen2ForCausalLM"  # テスト済み
+    QWEN2_MOE = "Qwen2MoeForCausalLM"  # 保留中
+    DEEPSEEK_V3 = "DeepseekV3ForCausalLM"  # 未テスト
+    MIXTRAL = "MixtralForCausalLM"  # テスト済み
+    QWEN2_5_VL = "Qwen2_5_VLForConditionalGeneration"  # サポート外
+    LLAMA4 = "Llama4ForConditionalGeneration"  # 未テスト
+    QWEN3 = "Qwen3ForCausalLM"  # テスト済み
+    QWEN3_MOE = "Qwen3MoeForCausalLM"  # 未テスト
 
 
-# Registry for model configuration converters
 MODEL_CONFIG_CONVERTER_REGISTRY: dict[SupportedModel, Callable[[PretrainedConfig, torch.dtype], TransformerConfig]] = {
     SupportedModel.LLAMA: hf_to_mcore_config_dense,
     SupportedModel.QWEN2: hf_to_mcore_config_dense,
@@ -86,7 +85,6 @@ MODEL_CONFIG_CONVERTER_REGISTRY: dict[SupportedModel, Callable[[PretrainedConfig
     SupportedModel.QWEN2_5_VL: hf_to_mcore_config_qwen2_5_vl,
 }
 
-# Registry for model initializers
 MODEL_INITIALIZER_REGISTRY: dict[SupportedModel, type[BaseModelInitializer]] = {
     SupportedModel.LLAMA: DenseModel,
     SupportedModel.QWEN2: DenseModel,
@@ -100,7 +98,6 @@ MODEL_INITIALIZER_REGISTRY: dict[SupportedModel, type[BaseModelInitializer]] = {
     SupportedModel.QWEN2_5_VL: Qwen25VLModel,
 }
 
-# Registry for model forward functions
 MODEL_FORWARD_REGISTRY: dict[SupportedModel, Callable] = {
     SupportedModel.LLAMA: gptmodel_forward,
     SupportedModel.QWEN2: gptmodel_forward,
@@ -115,7 +112,6 @@ MODEL_FORWARD_REGISTRY: dict[SupportedModel, Callable] = {
     SupportedModel.DEEPSEEK_V3: gptmodel_forward,
 }
 
-# Registry for model forward functions
 MODEL_FORWARD_FUSED_REGISTRY: dict[SupportedModel, Callable] = {
     SupportedModel.LLAMA: fused_forward_gptmodel,
     SupportedModel.QWEN2: fused_forward_gptmodel,
@@ -130,7 +126,6 @@ MODEL_FORWARD_FUSED_REGISTRY: dict[SupportedModel, Callable] = {
     SupportedModel.DEEPSEEK_V3: fused_forward_gptmodel,
 }
 
-# Registry for model weight converters
 MODEL_WEIGHT_CONVERTER_REGISTRY: dict[SupportedModel, type] = {
     SupportedModel.LLAMA: McoreToHFWeightConverterDense,
     SupportedModel.QWEN2: McoreToHFWeightConverterDense,
@@ -156,15 +151,15 @@ def get_supported_model(model_type: str) -> SupportedModel:
 def hf_to_mcore_config(
     hf_config: PretrainedConfig, dtype: torch.dtype, **override_transformer_config_kwargs
 ) -> TransformerConfig:
-    """Convert huggingface PretrainedConfig to mcore TransformerConfig.
+    """HuggingFace PretrainedConfig を mcore TransformerConfig に変換する。
 
     Args:
-        hf_config: The huggingface PretrainedConfig.
-        dtype: The dtype of the model.
-        **override_transformer_config_kwargs: The kwargs to override the transformer config.
+        hf_config: HuggingFace PretrainedConfig。
+        dtype: モデルのデータ型。
+        **override_transformer_config_kwargs: transformer 設定を上書きするキーワード引数。
 
     Returns:
-        The mcore TransformerConfig.
+        mcore TransformerConfig。
     """
     assert len(hf_config.architectures) == 1, "Only one architecture is supported for now"
     model = get_supported_model(hf_config.architectures[0])
@@ -182,19 +177,19 @@ def init_mcore_model(
     **extra_kwargs,  # may be used for vlm and moe
 ) -> nn.Module:
     """
-    Initialize a Mcore model.
+    Mcore モデルを初期化する。
 
     Args:
-        tfconfig: The transformer config.
-        hf_config: The HuggingFace config.
-        pre_process: Optional pre-processing function.
-        post_process: Optional post-processing function.
-        share_embeddings_and_output_weights: Whether to share embeddings and output weights.
-        value: Whether to use value.
-        **extra_kwargs: Additional keyword arguments.
+        tfconfig: transformer 設定。
+        hf_config: HuggingFace 設定。
+        pre_process: オプションの前処理関数。
+        post_process: オプションの後処理関数。
+        share_embeddings_and_output_weights: 埋め込みと出力重みを共有するかどうか。
+        value: value を使用するかどうか。
+        **extra_kwargs: 追加のキーワード引数。
 
     Returns:
-        The initialized model.
+        初期化されたモデル。
     """
     assert len(hf_config.architectures) == 1, "Only one architecture is supported for now"
     model = get_supported_model(hf_config.architectures[0])
@@ -229,7 +224,7 @@ def get_mcore_forward_fused_fn(hf_config: PretrainedConfig) -> Callable:
 
 def get_mcore_weight_converter(hf_config: PretrainedConfig, dtype: torch.dtype) -> Callable:
     """
-    Get the weight converter for given model architecture.
+    指定されたモデルアーキテクチャの重みコンバーターを取得する。
     """
     assert len(hf_config.architectures) == 1, "Only one architecture is supported for now"
     model = get_supported_model(hf_config.architectures[0])

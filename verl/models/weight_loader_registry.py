@@ -14,6 +14,7 @@
 
 
 def get_weight_loader(arch: str):
+    """指定されたアーキテクチャに対応する重みローダーを取得する"""
     from verl.models.mcore.loader import load_state_dict_to_megatron_gptmodel
 
     _MODEL_WEIGHT_MEGATRON_LOADER_REGISTRY = {
@@ -24,12 +25,13 @@ def get_weight_loader(arch: str):
     if arch in _MODEL_WEIGHT_MEGATRON_LOADER_REGISTRY:
         return _MODEL_WEIGHT_MEGATRON_LOADER_REGISTRY[arch]
     raise ValueError(
-        f"Model architectures {arch} loader are not supported for now. Supported architectures: "
+        f"モデルアーキテクチャ {arch} のローダーは現在サポートされていません。サポートされているアーキテクチャ: "
         f"{_MODEL_WEIGHT_MEGATRON_LOADER_REGISTRY.keys()}"
     )
 
 
 def get_weight_saver(arch: str):
+    """指定されたアーキテクチャに対応する重みセーバーを取得する"""
     from verl.models.mcore.saver import (
         merge_megatron_ckpt_gptmodel,
         merge_megatron_ckpt_gptmodel_dpskv3,
@@ -51,6 +53,6 @@ def get_weight_saver(arch: str):
     if arch in _MODEL_WEIGHT_MEGATRON_SAVER_REGISTRY:
         return _MODEL_WEIGHT_MEGATRON_SAVER_REGISTRY[arch]
     raise ValueError(
-        f"Model architectures {arch} saver are not supported for now. Supported architectures: "
+        f"モデルアーキテクチャ {arch} のセーバーは現在サポートされていません。サポートされているアーキテクチャ: "
         f"{_MODEL_WEIGHT_MEGATRON_SAVER_REGISTRY.keys()}"
     )

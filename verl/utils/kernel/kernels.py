@@ -29,7 +29,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Implementations of the linear cross entropy with token entropy kernel.
+線形クロスエントロピーとトークンエントロピーカーネルの実装。
 """
 
 import typing
@@ -72,7 +72,7 @@ if not HAVE_TRITON:
 @dataclass
 class EntropyReductionEnum:
     """
-    Enum for the reduction method of cross entropy.
+    クロスエントロピーの削減方法の列挙型。
     """
 
     _None = 0
@@ -82,7 +82,7 @@ class EntropyReductionEnum:
 
 def get_entropy_reduction_enum_number(reduction: str) -> int:
     """
-    Get the enum number for the reduction method of cross entropy.
+    クロスエントロピーの削減方法の列挙型番号を取得する。
     """
     _enum = EntropyReductionEnum._None
     if reduction == "none":
@@ -98,7 +98,7 @@ def get_entropy_reduction_enum_number(reduction: str) -> int:
 
 def get_entropy_reduction_enum(ce_reduction: int) -> EntropyReductionEnum:
     """
-    Get the enum for the reduction method of cross entropy.
+    クロスエントロピーの削減方法の列挙型を取得する。
     """
     _enum = EntropyReductionEnum._None
     if ce_reduction == 0:
@@ -115,24 +115,24 @@ def get_entropy_reduction_enum(ce_reduction: int) -> EntropyReductionEnum:
 @dataclass
 class BackwardEnum:
     """
-    Enum for the backward method.
+    逆伝播方法の列挙型。
     """
 
     _Total_Fuse_MN = (
-        0  # Fuse d_logits & d_hidden & d_weight, no intermediate storage, requires fp32 for d_hidden & d_weight
+        0  # d_logits & d_hidden & d_weight を融合、中間ストレージなし、d_hidden & d_weight に fp32 が必要
     )
-    _Total_Separate = 1  # Store d_logits, no special requirements for d_hidden & d_weight
-    _Split_Dlogits_N = 2  # split d_logits along its N dimension, aka. vocab_size
-    _Split_Dlogits_M = 3  # split d_logits along its M dimension, aka. num_tokens
+    _Total_Separate = 1  # d_logits を保存、d_hidden & d_weight に特別な要件なし
+    _Split_Dlogits_N = 2  # d_logits を N 次元（語彙サイズ）に沿って分割
+    _Split_Dlogits_M = 3  # d_logits を M 次元（トークン数）に沿って分割
 
 
 @dataclass
 class Config:
-    """Configuration for efficient entropy kernel operations.
+    """効率的なエントロピーカーネル操作の設定。
 
     Args:
-        _backward (BackwardEnum): Backward computation method. Defaults to BackwardEnum._Split_Dlogits_N.
-        _use_triton (bool): Whether to use Triton kernels for computation. Defaults to True.
+        _backward (BackwardEnum): 逆伝播計算方法。デフォルトは BackwardEnum._Split_Dlogits_N。
+        _use_triton (bool): 計算に Triton カーネルを使用するかどうか。デフォルトは True。
     """
 
     _backward: BackwardEnum = BackwardEnum._Split_Dlogits_N
@@ -144,7 +144,7 @@ _config = Config()
 
 def set_backward_method(backward_method: BackwardEnum):
     """
-    Set the backward method.
+    逆伝播方法を設定する。
     """
     global _config
     _config._backward = backward_method
@@ -187,7 +187,7 @@ def efficient_entropy_kernel_general_mainloop(
     BLOCK_SIZE_K: tl.constexpr,
 ):
     """
-    forward mainloop
+    順伝播メインループ
     """
     pid = tl.program_id(axis=0)
     num_splits = (vocab_size + vocab_per_split - 1) // vocab_per_split

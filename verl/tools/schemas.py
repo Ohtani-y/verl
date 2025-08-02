@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 
 class OpenAIFunctionPropertySchema(BaseModel):
-    """The schema of a parameter in OpenAI format."""
+    """OpenAI 形式のパラメータのスキーマ。"""
 
     type: str
     description: str | None = None
@@ -27,7 +27,7 @@ class OpenAIFunctionPropertySchema(BaseModel):
 
 
 class OpenAIFunctionParametersSchema(BaseModel):
-    """The schema of parameters in OpenAI format."""
+    """OpenAI 形式のパラメータのスキーマ。"""
 
     type: str
     properties: dict[str, OpenAIFunctionPropertySchema]
@@ -35,7 +35,7 @@ class OpenAIFunctionParametersSchema(BaseModel):
 
 
 class OpenAIFunctionSchema(BaseModel):
-    """The schema of a function in OpenAI format."""
+    """OpenAI 形式の関数のスキーマ。"""
 
     name: str
     description: str
@@ -44,21 +44,21 @@ class OpenAIFunctionSchema(BaseModel):
 
 
 class OpenAIFunctionToolSchema(BaseModel):
-    """The schema of a tool in OpenAI format."""
+    """OpenAI 形式のツールのスキーマ。"""
 
     type: str
     function: OpenAIFunctionSchema
 
 
 class OpenAIFunctionParsedSchema(BaseModel):
-    """The parsed schema of a tool in OpenAI format."""
+    """OpenAI 形式のツールの解析済みスキーマ。"""
 
     name: str
-    arguments: str  # JSON string
+    arguments: str  # JSON 文字列
 
 
 class OpenAIFunctionCallSchema(BaseModel):
-    """The parsed schema of a tool in OpenAI format."""
+    """OpenAI 形式のツールの解析済みスキーマ。"""
 
     name: str
     arguments: dict[str, Any]
@@ -73,7 +73,6 @@ class OpenAIFunctionCallSchema(BaseModel):
         except json.JSONDecodeError:
             arguments = {}
             has_decode_error = True
-        # If the arguments is not a dict, it means the arguments is not a valid JSON string
         if not isinstance(arguments, dict):
             arguments = {}
             has_decode_error = True
@@ -82,7 +81,7 @@ class OpenAIFunctionCallSchema(BaseModel):
 
 
 class OpenAIFunctionToolCall(BaseModel):
-    """The tool call in OpenAI format."""
+    """OpenAI 形式のツール呼び出し。"""
 
     id: str
     type: Literal["function"] = "function"

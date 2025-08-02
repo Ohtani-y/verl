@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Sharding manager to implement HybridEngine
+HybridEngine を実装するためのシャーディングマネージャー
 """
 
 from verl import DataProto

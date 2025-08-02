@@ -61,7 +61,6 @@ class MCPSearchTool(MCPBaseTool):
             metadata["api_request_error"] = err_msg
             metadata["status"] = "error"
 
-        # update metadata
         metadata["status"] = "success"
         metadata["queries"] = query_list
         metadata["query_count"] = len(query_list)

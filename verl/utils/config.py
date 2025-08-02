@@ -22,43 +22,38 @@ __all__ = ["omega_conf_to_dataclass"]
 
 def omega_conf_to_dataclass(config: DictConfig | dict, dataclass_type: Optional[type[Any]] = None) -> Any:
     """
-    Convert an OmegaConf DictConfig to a dataclass.
+    OmegaConf DictConfig を dataclass に変換します。
 
     Args:
-        config: The OmegaConf DictConfig or dict to convert.
-        dataclass_type: The dataclass type to convert to. When dataclass_type is None,
-            the DictConfig must contain _target_ to be instantiated via hydra.instantiate API.
+        config: 変換する OmegaConf DictConfig または dict。
+        dataclass_type: 変換先の dataclass 型。dataclass_type が None の場合、
+            DictConfig は hydra.instantiate API 経由でインスタンス化するために _target_ を含む必要があります。
 
     Returns:
-        The dataclass instance.
+        dataclass インスタンス。
     """
-    # Got an empty config
     if not config:
         return dataclass_type if dataclass_type is None else dataclass_type()
-    # Got an object
     if not isinstance(config, DictConfig | ListConfig | dict | list):
         return config
 
     if dataclass_type is None:
         assert "_target_" in config, (
-            "When dataclass_type is not provided, config must contain _target_. "
-            "See trainer/config/ppo_trainer.yaml algorithm section for an example. "
-            f"Got config: {config}"
+            "dataclass_type が提供されていない場合、config は _target_ を含む必要があります。 "
+            "例については trainer/config/ppo_trainer.yaml の algorithm セクションを参照してください。 "
+            f"取得した config: {config}"
         )
         from hydra.utils import instantiate
 
         return instantiate(config, _convert_="partial")
 
     if not is_dataclass(dataclass_type):
-        raise ValueError(f"{dataclass_type} must be a dataclass")
-    cfg = OmegaConf.create(config)  # in case it's a dict
-    # pop _target_ to avoid hydra instantiate error, as most dataclass do not have _target_
+        raise ValueError(f"{dataclass_type} は dataclass である必要があります")
+    cfg = OmegaConf.create(config)  # dict の場合に備えて
     if "_target_" in cfg:
         cfg.pop("_target_")
     cfg_from_dataclass = OmegaConf.structured(dataclass_type)
-    # let cfg override the existing vals in `cfg_from_dataclass`
     cfg_merged = OmegaConf.merge(cfg_from_dataclass, cfg)
-    # now convert to `dataclass_type`
     config_object = OmegaConf.to_object(cfg_merged)
     return config_object
 

@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Single Process Actor
+シングルプロセス Actor
 """
 
 import logging
@@ -50,16 +50,16 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 
 class DataParallelPPOActor(BasePPOActor):
-    """FSDP DataParallel PPO Actor or Ref worker
+    """FSDP DataParallel PPO Actor または Ref ワーカー
 
     Args:
-        config (ActorConfig): Actor config
-        actor_module (nn.Module): Actor or ref module
-        actor_optimizer (torch.optim.Optimizer, optional): Actor optimizer. Defaults to None.
+        config (ActorConfig): Actor 設定
+        actor_module (nn.Module): Actor または ref モジュール
+        actor_optimizer (torch.optim.Optimizer, optional): Actor オプティマイザー。デフォルトは None。
     """
 
     def __init__(self, config: ActorConfig, actor_module: nn.Module, actor_optimizer: torch.optim.Optimizer = None):
-        """When optimizer is None, it is Reference Policy"""
+        """オプティマイザーが None の場合、Reference Policy となる"""
         super().__init__(config)
         self.actor_module = actor_module
         self.actor_optimizer = actor_optimizer
@@ -82,7 +82,7 @@ class DataParallelPPOActor(BasePPOActor):
 
         self.compute_entropy_from_logits = (
             torch.compile(entropy_from_logits, dynamic=True)
-            if self.config.get("use_torch_compile", True)  #  use torch compile by default
+            if self.config.get("use_torch_compile", True)  # デフォルトで torch compile を使用
             else entropy_from_logits
         )
         self.device_name = get_device_name()
@@ -98,7 +98,7 @@ class DataParallelPPOActor(BasePPOActor):
         response_length = micro_batch["responses"].size(-1)
         multi_modal_inputs = {}
         if "multi_modal_inputs" in micro_batch.keys():
-            if "image_bound" in micro_batch["multi_modal_inputs"][0]:  # minicpm-o logic
+            if "image_bound" in micro_batch["multi_modal_inputs"][0]:  # minicpm-o ロジック
                 for key in micro_batch["multi_modal_inputs"][0].keys():
                     multi_modal_inputs[key] = [inputs[key] for inputs in micro_batch["multi_modal_inputs"]]
             else:
@@ -122,7 +122,6 @@ class DataParallelPPOActor(BasePPOActor):
                 )  # input_ids_rmpad (total_nnz, ...)
                 input_ids_rmpad = input_ids_rmpad.transpose(0, 1)  # (1, total_nnz)
 
-                # unpad the position_ids to align the rotary
                 if position_ids.dim() == 3:
                     position_ids_rmpad = (
                         index_first_axis(rearrange(position_ids, "c b s ... -> (b s) c ..."), indices)
@@ -141,7 +140,6 @@ class DataParallelPPOActor(BasePPOActor):
                         input_ids, attention_mask, position_ids, cu_seqlens, multi_modal_inputs
                     )
 
-                # for compute the log_prob
                 input_ids_rmpad_rolled = torch.roll(input_ids_rmpad, shifts=-1, dims=1)  # (1, total_nnz)
 
                 # pad and slice the inputs if sp > 1

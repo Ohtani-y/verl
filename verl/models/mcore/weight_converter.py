@@ -14,9 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# online convert mcore weight to pure huggingface weight, no any fusion
-# including format conversion and name mapping
-# not including resharding
 import torch
 from megatron.core.transformer import TransformerConfig
 from transformers import PretrainedConfig
@@ -69,7 +66,6 @@ class McoreToHFWeightConverterDense(McoreToHFWeightConverterBase):
         layer_number = name.split(".")[2]
         convert_names = []
         if "mlp.linear_fc1.weight" in name:
-            # split gate_proj and up_proj
             convert_names.append(f"model.layers.{layer_number}.mlp.gate_proj.weight")
             convert_names.append(f"model.layers.{layer_number}.mlp.up_proj.weight")
             assert len(params) == 2
@@ -126,7 +122,7 @@ class McoreToHFWeightConverterQwen2Moe(McoreToHFWeightConverterDense):
         elif "shared_experts.gate_weight" in name:
             convert_names.append(f"model.layers.{layer_number}.mlp.shared_expert_gate.weight")
             assert len(params) == 1
-        elif "shared_experts.linear_fc1.weight" in name:  # split gate_proj and up_proj
+        elif "shared_experts.linear_fc1.weight" in name:  # gate_proj と up_proj に分割
             convert_names.append(f"model.layers.{layer_number}.mlp.shared_expert.gate_proj.weight")
             convert_names.append(f"model.layers.{layer_number}.mlp.shared_expert.up_proj.weight")
             assert len(params) == 2
@@ -391,7 +387,6 @@ class McoreToHFWeightConverterDpskv3(McoreToHFWeightConverterBase):
         if name in direct_name_mapping:
             return [direct_name_mapping[name]], [params[0]]
         assert "mtp.layers.0.transformer_layer" in name, "only support transformer layer for now"
-        # use proxy name to convert
         proxy_name = name.replace("mtp.layers.0.transformer_layer", "decoder.layers.61")
         if "self_attention" in proxy_name or "input_layernorm.weight" in proxy_name:
             convert_names, params = self._convert_attention_param(proxy_name, params)
@@ -445,7 +440,7 @@ class McoreToHFWeightConverterMixtral(McoreToHFWeightConverterDense):
 
 class McoreToHFWeightConverterQwen3Moe(McoreToHFWeightConverterDense):
     def _convert_mlp_param(self, name: str, params: list[torch.Tensor]) -> tuple[list[str], list[torch.Tensor]]:
-        # qwen3 moe no share expert
+        # qwen3 moe 共有エキスパートなし
 
         # 'decoder.layers.0.pre_mlp_layernorm.weight',
         # 'decoder.layers.0.mlp.router.weight',

@@ -29,7 +29,7 @@ from verl.utils.ulysses import (
 
 # Copied from transformers.models.llama.modeling_llama.rotate_half
 def rotate_half(x):
-    """Rotates half the hidden dims of the input."""
+    """入力の隠れ次元の半分を回転させます。"""
     x1 = x[..., : x.shape[-1] // 2]
     x2 = x[..., x.shape[-1] // 2 :]
     return torch.cat((-x2, x1), dim=-1)
@@ -37,25 +37,25 @@ def rotate_half(x):
 
 # Copied from transformers.models.llama.modeling_llama.apply_rotary_pos_emb
 def apply_rotary_pos_emb(q, k, cos, sin, position_ids, unsqueeze_dim=1):
-    """Applies Rotary Position Embedding to the query and key tensors.
+    """query と key テンソルに Rotary Position Embedding を適用します。
 
     Args:
-        q (`torch.Tensor`): The query tensor.
-        k (`torch.Tensor`): The key tensor.
-        cos (`torch.Tensor`): The cosine part of the rotary embedding.
-        sin (`torch.Tensor`): The sine part of the rotary embedding.
+        q (`torch.Tensor`): query テンソル。
+        k (`torch.Tensor`): key テンソル。
+        cos (`torch.Tensor`): rotary embedding のコサイン部分。
+        sin (`torch.Tensor`): rotary embedding のサイン部分。
         position_ids (`torch.Tensor`):
-            The position indices of the tokens corresponding to the query and key tensors. For example, this can be
-            used to pass offsetted position ids when working with a KV-cache.
+            query と key テンソルに対応するトークンの位置インデックス。例えば、KV-cache を使用する際に
+            オフセットされた position_ids を渡すために使用できます。
         unsqueeze_dim (`int`, *optional*, defaults to 1):
-            The 'unsqueeze_dim' argument specifies the dimension along which to unsqueeze cos[position_ids] and
-            sin[position_ids] so that they can be properly broadcasted to the dimensions of q and k. For example, note
-            that cos[position_ids] and sin[position_ids] have the shape [batch_size, seq_len, head_dim]. Then, if q and
-            k have the shape [batch_size, heads, seq_len, head_dim], then setting unsqueeze_dim=1 makes
-            cos[position_ids] and sin[position_ids] broadcastable to the shapes of q and k. Similarly, if q and k have
-            the shape [batch_size, seq_len, heads, head_dim], then set unsqueeze_dim=2.
+            'unsqueeze_dim' 引数は、cos[position_ids] と sin[position_ids] を unsqueeze する次元を指定し、
+            q と k の次元に適切にブロードキャストできるようにします。例えば、cos[position_ids] と 
+            sin[position_ids] の形状が [batch_size, seq_len, head_dim] であることに注意してください。
+            q と k の形状が [batch_size, heads, seq_len, head_dim] の場合、unsqueeze_dim=1 を設定すると
+            cos[position_ids] と sin[position_ids] が q と k の形状にブロードキャスト可能になります。
+            同様に、q と k の形状が [batch_size, seq_len, heads, head_dim] の場合は unsqueeze_dim=2 を設定します。
     Returns:
-        `tuple(torch.Tensor)` comprising of the query and key tensors rotated using the Rotary Position Embedding.
+        `tuple(torch.Tensor)` Rotary Position Embedding を使用して回転された query と key テンソルで構成されるタプル。
     """
     cos = cos[position_ids].unsqueeze(unsqueeze_dim)
     sin = sin[position_ids].unsqueeze(unsqueeze_dim)
@@ -74,8 +74,8 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids, unsqueeze_dim=1):
 # Copied from transformers.models.llama.modeling_llama.repeat_kv
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
-    This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
-    num_key_value_heads, seqlen, head_dim) to (batch, num_attention_heads, seqlen, head_dim)
+    これは torch.repeat_interleave(x, dim=1, repeats=n_rep) と同等です。隠れ状態は (batch,
+    num_key_value_heads, seqlen, head_dim) から (batch, num_attention_heads, seqlen, head_dim) に変換されます。
     """
     batch, num_key_value_heads, slen, head_dim = hidden_states.shape
     if n_rep == 1:

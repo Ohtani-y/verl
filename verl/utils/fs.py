@@ -14,7 +14,7 @@
 # limitations under the License.
 
 # -*- coding: utf-8 -*-
-"""File-system agnostic IO APIs"""
+"""ファイルシステムに依存しない IO API"""
 
 import hashlib
 import os
@@ -32,46 +32,45 @@ _HDFS_PREFIX = "hdfs://"
 
 
 def is_non_local(path):
-    """Check if a path is a non-local (HDFS) path.
+    """パスが非ローカル（HDFS）パスかどうかをチェックします。
 
     Args:
-        path (str): The path to check.
+        path (str): チェックするパス。
 
     Returns:
-        bool: True if the path is an HDFS path, False otherwise.
+        bool: パスが HDFS パスの場合は True、そうでなければ False。
     """
     return path.startswith(_HDFS_PREFIX)
 
 
 def md5_encode(path: str) -> str:
-    """Generate an MD5 hash of a path string.
+    """パス文字列の MD5 ハッシュを生成します。
 
-    This function is used to create unique identifiers for paths, typically
-    for creating cache directories or lock files.
+    この関数は、通常キャッシュディレクトリやロックファイルの作成のために、
+    パスの一意識別子を作成するために使用されます。
 
     Args:
-        path (str): The path to encode.
+        path (str): エンコードするパス。
 
     Returns:
-        str: The hexadecimal MD5 hash of the path.
+        str: パスの16進数 MD5 ハッシュ。
     """
     return hashlib.md5(path.encode()).hexdigest()
 
 
 def get_local_temp_path(hdfs_path: str, cache_dir: str) -> str:
-    """Generate a unique local cache path for an HDFS resource.
-    Creates a MD5-hashed subdirectory in cache_dir to avoid name conflicts,
-    then returns path combining this subdirectory with the HDFS basename.
+    """HDFS リソース用の一意なローカルキャッシュパスを生成します。
+    名前の競合を避けるために cache_dir 内に MD5 ハッシュ化されたサブディレクトリを作成し、
+    このサブディレクトリと HDFS ベース名を組み合わせたパスを返します。
 
     Args:
-        hdfs_path (str): Source HDFS path to be cached
-        cache_dir (str): Local directory for storing cached files
+        hdfs_path (str): キャッシュする HDFS ソースパス
+        cache_dir (str): キャッシュファイルを保存するローカルディレクトリ
 
     Returns:
-        str: Absolute local filesystem path in format:
+        str: 以下の形式の絶対ローカルファイルシステムパス:
             {cache_dir}/{md5(hdfs_path)}/{basename(hdfs_path)}
     """
-    # make a base64 encoding of hdfs_path to avoid directory conflict
     encoded_hdfs_path = md5_encode(hdfs_path)
     temp_dir = os.path.join(cache_dir, encoded_hdfs_path)
     os.makedirs(temp_dir, exist_ok=True)
@@ -81,10 +80,10 @@ def get_local_temp_path(hdfs_path: str, cache_dir: str) -> str:
 
 def verify_copy(src: str, dest: str) -> bool:
     """
-    verify the copy of src to dest by comparing their sizes and file structures.
+    サイズとファイル構造を比較して src から dest へのコピーを検証します。
 
     return:
-        bool: True if the copy is verified, False otherwise.
+        bool: コピーが検証された場合は True、そうでなければ False。
     """
     if not os.path.exists(src):
         return False
@@ -140,7 +139,7 @@ def verify_copy(src: str, dest: str) -> bool:
 
 def copy_to_shm(src: str):
     """
-    Load the model into   /dev/shm   to make the process of loading the model multiple times more efficient.
+    モデルを複数回ロードするプロセスをより効率的にするために、モデルを /dev/shm にロードします。
     """
     shm_model_root = "/dev/shm/verl-cache/"
     src_abs = os.path.abspath(os.path.normpath(src))

@@ -1,46 +1,31 @@
-# actor_rollout_ref.rollout.name: hf/vllm/sglang. The default value will be removed in the future
+# actor_rollout_ref.rollout.name: hf/vllm/sglang. デフォルト値は将来削除される予定
 name: ???
 
 # sync: LLM, async: AsyncLLM
 mode: sync
 
-# Sampling temperature for rollout.
 temperature: 1.0
 
-# Top-k sampling parameter. -1 for vLLM rollout, 0 for HF rollout.
 top_k: -1
 
-# Top-p sampling parameter. Default 1.0.
 top_p: 1
 
-# typically the same as data max prompt length
-# same as data.max_prompt_length if it exists
 prompt_length: ${oc.select:data.max_prompt_length,512}
 
-# typically the same as data max response length
-# same as data.max_response_length if it exists
 response_length: ${oc.select:data.max_response_length,512}
 
-# for vllm rollout
-# Rollout model parameters type. Align with actor model's FSDP/Megatron type.
 dtype: bfloat16
 
-# Fraction of GPU memory used by vLLM/SGLang for KV cache.
 gpu_memory_utilization: 0.5
 
-# Whether to ignore EOS and continue generating after EOS is hit.
 ignore_eos: False
 
-# Whether to disable CUDA graph. Default True to allow cache freeing.
 enforce_eager: True
 
-# Whether to free engine KVCache after generation. Set enforce_eager=True when enabled.
 free_cache_engine: True
 
-# TP size for rollout. Not effective for hf
 tensor_model_parallel_size: 2
 
-# max number of tokens in a batch
 max_num_batched_tokens: 8192
 
 # max length for rollout
@@ -98,13 +83,10 @@ engine_kwargs:
 val_kwargs:
 
   # sampling parameters for validation
-  # Top-k sampling parameter. -1 for vLLM rollout, 0 for HF rollout.
   top_k: -1
 
-  # Top-p sampling parameter. Default 1.0.
   top_p: 1.0
 
-  # Sampling temperature for rollout.
   temperature: 0
 
   # whether to repeat n times for validation

@@ -17,8 +17,6 @@ from typing import Optional
 
 import torch.nn as nn
 
-# Supported models in Megatron-LM
-# Architecture -> (module, class).
 _MODELS = {
     "LlamaForCausalLM": (
         "llama",
@@ -35,7 +33,6 @@ _MODELS = {
 }
 
 
-# return model class
 class ModelRegistry:
     @staticmethod
     def load_model_cls(model_arch: str, value=False) -> Optional[type[nn.Module]]:

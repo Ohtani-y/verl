@@ -27,7 +27,6 @@ def _fused_linear_for_ppo_fwd(
     orig_dtype = logits.dtype
     logits = logits.to(torch.float32)
 
-    # Slower but more numerically stable to do log_softmax than probs.log()
     probs = logits.softmax(dim=-1)
     log_probs = logits.log_softmax(dim=-1)
 
@@ -53,12 +52,11 @@ def _fused_linear_for_ppo_bwd(
 
     dlogits = 0
 
-    # Gradient from log_probs
+    # log_probs からの勾配
     if dlog_probs is not None:
         one_hot_input = torch.zeros_like(logits).scatter_(-1, input_ids.unsqueeze(-1), 1)
         dlogits += dlog_probs.to(torch.float32).unsqueeze(-1) * (one_hot_input - probs)
 
-    # Gradient from entropy
     if dentropy is not None:
         log_probs = logits.log_softmax(dim=-1)
         entropy = torch.logsumexp(logits, dim=-1) - torch.sum(probs * logits, dim=-1)
@@ -84,7 +82,6 @@ class FusedLinearForPPOFunction(torch.autograd.Function):
     ) -> tuple[torch.FloatTensor, torch.FloatTensor]:
         ctx.set_materialize_grads(False)
 
-        # Cast to a 2D tensor of the shape [T, D] for ease of working
         orig_ndim = hidden_states.ndim
         assert orig_ndim in (2, 3), f"Invalid hidden_states shape, received {hidden_states.shape}"
 
@@ -102,7 +99,6 @@ class FusedLinearForPPOFunction(torch.autograd.Function):
         log_probs = hidden_states.new_zeros(T, requires_grad=output_requires_grad)
         entropy = hidden_states.new_zeros(T, requires_grad=output_requires_grad)
 
-        # Perform forward one chunk at a time
         for chunk_start in range(0, T, chunk_size):
             chunk_end = min(chunk_start + chunk_size, T)
 
@@ -138,7 +134,6 @@ class FusedLinearForPPOFunction(torch.autograd.Function):
         temperature = ctx.temperature
         chunk_size = ctx.chunk_size
 
-        # Here orig_ndim refers to the orig_ndim of hidden_states
         if orig_ndim == 3:
             if dlog_probs is not None:
                 dlog_probs = dlog_probs.flatten()
@@ -155,7 +150,6 @@ class FusedLinearForPPOFunction(torch.autograd.Function):
         if vocab_weights.requires_grad:
             dvocab_weights = torch.zeros_like(vocab_weights)
 
-        # Perform backward one chunk at a time
         for chunk_start in range(0, T, chunk_size):
             chunk_end = min(chunk_start + chunk_size, T)
             chunk_dlog_probs = None

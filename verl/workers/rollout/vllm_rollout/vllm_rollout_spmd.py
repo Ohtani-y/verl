@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The vllm_rollout that can be applied in different backend
-When working with FSDP:
-- Use DTensor weight loader (recommended) or HF weight loader
-- Utilize state_dict from the FSDP to synchronize the weights among tp ranks in vLLM
-When working with Megatron:
-- Use Megatron weight loader
-- During training, only the current pp stage holds the parameters
-- Before inference, broadcast the parameters of the current pp rank
-  to all other pp ranks (all pp ranks holds all the parameters)
-- Bind the parameters to the inference engine
-- Do inference in tp. pp is treated as additional dp
-- After inference, all the parameters that doesn't belong to this pp rank is freed.
+異なるバックエンドで適用可能な vllm_rollout
+FSDP と連携する場合:
+- DTensor weight loader（推奨）または HF weight loader を使用
+- FSDP の state_dict を利用して vLLM の tp ランク間で重みを同期
+Megatron と連携する場合:
+- Megatron weight loader を使用
+- トレーニング中は、現在の pp ステージのみがパラメータを保持
+- 推論前に、現在の pp ランクのパラメータを他の全 pp ランクにブロードキャスト
+  （全 pp ランクが全パラメータを保持）
+- パラメータを推論エンジンにバインド
+- tp で推論を実行。pp は追加の dp として扱われる
+- 推論後、この pp ランクに属さない全パラメータが解放される
 """
 
 import getpass
@@ -60,14 +60,10 @@ logger = logging.getLogger(__file__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 # TODO
-# 1. support pp in vllm
-# 2. passing tokenizer is not necessary? no encoding/decoding is happending here
-# 3. simplify init logics
 
 
-# NOTE(sgm): add for verl. We can optimize it by making the dataloader yield List[int] without padding.
+# NOTE(sgm): verl 用に追加。データローダーがパディングなしで List[int] を yield するようにして最適化可能
 def _pre_process_inputs(pad_token_id, prompt_token_ids: torch.Tensor) -> list[int]:
-    # remove the left padding in the prompt token_id
     # pad_token_id = self.llm_engine.tokenizer.pad_token_id if self.llm_engine.tokenizer.pad_token_id
     # is not None else self.llm_engine.tokenizer.eos_token_id
     non_pad_index = torch.nonzero(prompt_token_ids != pad_token_id, as_tuple=False)[0][0]
@@ -77,14 +73,14 @@ def _pre_process_inputs(pad_token_id, prompt_token_ids: torch.Tensor) -> list[in
 
 class vLLMRollout(BaseRollout):
     def __init__(self, model_path: str, config: DictConfig, tokenizer, model_hf_config, **kwargs):
-        """A vLLM rollout. It requires the module is supported by the vllm.
+        """vLLM rollout。モジュールが vLLM でサポートされている必要があります。
 
         Args:
-            module: module here follows huggingface APIs
+            module: ここでのモジュールは HuggingFace API に従います
             config: DictConfig
-            tokenizer: the task/model tokenizer
-            model_hf_config: the huggingface config to initiallize the generating model in vllm
-            **kwargs: train_tp, for Megatron Backend to initialize hybrid engine (zero redundancy) process group
+            tokenizer: タスク/モデルの tokenizer
+            model_hf_config: vLLM で生成モデルを初期化するための HuggingFace 設定
+            **kwargs: train_tp、Megatron Backend でハイブリッドエンジン（ゼロ冗長性）プロセスグループを初期化するため
         """
         super().__init__()
         self.config = config

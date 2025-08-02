@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-A unified tracking interface that supports logging data to different backend
+異なるバックエンドへのデータログ記録をサポートする統一トラッキングインターフェース
 """
 
 import dataclasses
@@ -24,14 +24,15 @@ from typing import Any
 
 
 class Tracking:
-    """A unified tracking interface for logging experiment data to multiple backends.
+    """複数のバックエンドに実験データをログ記録するための統一トラッキングインターフェース。
 
-    This class provides a centralized way to log experiment metrics, parameters, and artifacts
-    to various tracking backends including WandB, MLflow, SwanLab, TensorBoard, and console.
+    このクラスは、WandB、MLflow、SwanLab、TensorBoard、コンソールなどの
+    様々なトラッキングバックエンドに実験メトリクス、パラメータ、アーティファクトを
+    ログ記録するための一元化された方法を提供します。
 
     Attributes:
-        supported_backend: List of supported tracking backends.
-        logger: Dictionary of initialized logger instances for each backend.
+        supported_backend: サポートされているトラッキングバックエンドのリスト。
+        logger: 各バックエンドの初期化されたロガーインスタンスの辞書。
     """
 
     supported_backend = ["wandb", "mlflow", "swanlab", "vemlp_wandb", "tensorboard", "console", "clearml"]
@@ -66,8 +67,6 @@ class Tracking:
             MLFLOW_TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "sqlite:////tmp/mlruns.db")
             mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
 
-            # Project_name is actually experiment_name in MLFlow
-            # If experiment does not exist, will create a new experiment
             experiment = mlflow.set_experiment(project_name)
             mlflow.start_run(experiment_id=experiment.experiment_id, run_name=experiment_name)
             mlflow.log_params(_compute_mlflow_params_from_objects(config))
@@ -82,10 +81,10 @@ class Tracking:
             SWANLAB_LOG_DIR = os.environ.get("SWANLAB_LOG_DIR", "swanlog")
             SWANLAB_MODE = os.environ.get("SWANLAB_MODE", "cloud")
             if SWANLAB_API_KEY:
-                swanlab.login(SWANLAB_API_KEY)  # NOTE: previous login information will be overwritten
+                swanlab.login(SWANLAB_API_KEY)  # 注意: 以前のログイン情報は上書きされます
 
             if config is None:
-                config = {}  # make sure config is not None, otherwise **config will raise error
+                config = {}  # configがNoneでないことを確認、そうでなければ**configでエラーが発生
             swanlab.init(
                 project=project_name,
                 experiment_name=experiment_name,
@@ -292,22 +291,18 @@ class ValidationGenerationsLogger:
         self._log_generations_to_wandb(samples, step, wandb)
 
     def _log_generations_to_wandb(self, samples, step, wandb):
-        """Log samples to wandb as a table"""
+        """サンプルをテーブルとしてwandbにログ記録"""
 
-        # Create column names for all samples
         columns = ["step"] + sum(
             [[f"input_{i + 1}", f"output_{i + 1}", f"score_{i + 1}"] for i in range(len(samples))], []
         )
 
         if not hasattr(self, "validation_table"):
-            # Initialize the table on first call
             self.validation_table = wandb.Table(columns=columns)
 
-        # Create a new table with same columns and existing data
-        # Workaround for https://github.com/wandb/wandb/issues/2981#issuecomment-1997445737
+        # https://github.com/wandb/wandb/issues/2981#issuecomment-1997445737 の回避策
         new_table = wandb.Table(columns=columns, data=self.validation_table.data)
 
-        # Add new row with all data
         row_data = []
         row_data.append(step)
         for sample in samples:
@@ -315,12 +310,11 @@ class ValidationGenerationsLogger:
 
         new_table.add_data(*row_data)
 
-        # Update reference and log
         wandb.log({"val/generations": new_table}, step=step)
         self.validation_table = new_table
 
     def log_generations_to_swanlab(self, samples, step):
-        """Log samples to swanlab as text"""
+        """サンプルをテキストとしてswanlabにログ記録"""
         import swanlab
 
         swanlab_table = swanlab.echarts.Table()

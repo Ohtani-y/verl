@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Multi-turn SFT dataset that supports training on conversation data with multiple turns
+複数ターンの会話データでのトレーニングをサポートするマルチターン SFT データセット
 """
 
 import logging
@@ -35,24 +35,20 @@ def convert_nested_value_to_list_recursive(data_item):
     elif isinstance(data_item, list):
         return [convert_nested_value_to_list_recursive(elem) for elem in data_item]
     elif isinstance(data_item, np.ndarray):
-        # Convert to list, then recursively process the elements of the new list
         return convert_nested_value_to_list_recursive(data_item.tolist())
     else:
-        # Base case: item is already a primitive type (int, str, float, bool, etc.)
         return data_item
 
 
 class MultiTurnSFTDataset(Dataset):
     """
-    Dataset for multi-turn conversations where each assistant response should be trained
+    各アシスタント応答をトレーニングするマルチターン会話用データセット
     """
 
     def __init__(self, parquet_files: str | list[str], tokenizer, config=None):
-        # Set defaults and extract parameters from config if provided
         config = config or {}
         self.truncation = config.get("truncation", "error")
         self.max_length = config.get("max_length", 1024)
-        # Get messages_key from the new multiturn config structure
         multiturn_config = config.get("multiturn", {})
         self.messages_key = multiturn_config.get("messages_key", "messages")
         self.tools_key = multiturn_config.get("tools_key", "tools")
@@ -89,15 +85,12 @@ class MultiTurnSFTDataset(Dataset):
             dataframes.append(dataframe)
         self.dataframe = pd.concat(dataframes)
 
-        # Extract messages list from dataframe
         self.messages = self.dataframe[self.messages_key].apply(series_to_item).tolist()
 
-        # Extract tools list from dataframe
         if self.tools_key in self.dataframe.columns:
             self.tools = self.dataframe[self.tools_key].apply(convert_nested_value_to_list_recursive).tolist()
         else:
             self.tools = None
-        # Extract enable_thinking list from dataframe
         if self.enable_thinking_key in self.dataframe.columns:
             self.enable_thinking = self.dataframe[self.enable_thinking_key].tolist()
         else:
@@ -116,17 +109,17 @@ class MultiTurnSFTDataset(Dataset):
         tools: Optional[list[dict[str, Any]]] = None,
     ) -> tuple[list[int], list[int], list[int]]:
         """
-        Process tokens for a single message or a group of messages.
+        単一メッセージまたはメッセージグループのトークンを処理します。
 
         Args:
-            messages: List of message dictionaries
-            start_idx: Start index in messages list
-            end_idx: End index in messages list
-            is_assistant: Whether this is an assistant message
-            enable_thinking: Whether to enable thinking mode
+            messages: メッセージ辞書のリスト
+            start_idx: メッセージリストの開始インデックス
+            end_idx: メッセージリストの終了インデックス
+            is_assistant: これがアシスタントメッセージかどうか
+            enable_thinking: thinking モードを有効にするかどうか
 
         Returns:
-            Tuple of (tokens, loss_mask, attention_mask)
+            (tokens, loss_mask, attention_mask) のタプル
         """
         if start_idx > 0:
             prev_applied_text = self.tokenizer.apply_chat_template(
@@ -155,7 +148,6 @@ class MultiTurnSFTDataset(Dataset):
             enable_thinking=enable_thinking,
             tools=tools,
         )
-        # Get tokens for the current message only
         if is_assistant:
             generation_prompt_text = prev_applied_text_w_generation_prompt[len(prev_applied_text) :]
             generation_prompt_tokens = self.tokenizer.encode(

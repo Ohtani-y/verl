@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Note that we don't combine the main with ray_trainer as ray_trainer is used by other main.
+ray_trainer は他の main でも使用されるため、main と ray_trainer を結合しないことに注意。
 """
 
 import os
@@ -32,36 +32,28 @@ from verl.utils.import_utils import load_extern_type
 
 @hydra.main(config_path="config", config_name="ppo_trainer", version_base=None)
 def main(config):
-    """Main entry point for PPO training with Hydra configuration management.
+    """Hydra 設定管理による PPO トレーニングのメインエントリーポイント。
 
     Args:
-        config_dict: Hydra configuration dictionary containing training parameters.
+        config_dict: トレーニングパラメータを含む Hydra 設定辞書。
     """
     run_ppo(config)
 
 
-# Define a function to run the PPO-like training process
 def run_ppo(config) -> None:
-    """Initialize Ray cluster and run distributed PPO training process.
+    """Ray クラスターを初期化し、分散 PPO トレーニングプロセスを実行。
 
     Args:
-        config: Training configuration object containing all necessary parameters
-                for distributed PPO training including Ray initialization settings,
-                model paths, and training hyperparameters.
+        config: Ray 初期化設定、モデルパス、トレーニングハイパーパラメータを含む
+                分散 PPO トレーニングに必要なすべてのパラメータを含むトレーニング設定オブジェクト。
     """
-    # Check if Ray is not initialized
     if not ray.is_initialized():
-        # Initialize Ray with a local cluster configuration
-        # Set environment variables in the runtime environment to control tokenizer parallelism,
-        # NCCL debug level, VLLM logging level, and allow runtime LoRA updating
-        # `num_cpus` specifies the number of CPU cores Ray can use, obtained from the configuration
+        # `num_cpus` は Ray が使用できる CPU コア数を指定、設定から取得
         ray.init(
             runtime_env=get_ppo_ray_runtime_env(),
             num_cpus=config.ray_init.num_cpus,
         )
 
-    # Create a remote instance of the TaskRunner class, and
-    # Execute the `run` method of the TaskRunner instance remotely and wait for it to complete
     if (
         is_cuda_available
         and config.trainer.get("profile_steps") is not None
@@ -76,14 +68,12 @@ def run_ppo(config) -> None:
         runner = TaskRunner.remote()
     ray.get(runner.run.remote(config))
 
-    # [Optional] get the path of the timeline trace file from the configuration, default to None
-    # This file is used for performance analysis
     timeline_json_file = config.ray_init.get("timeline_json_file", None)
     if timeline_json_file:
         ray.timeline(filename=timeline_json_file)
 
 
-@ray.remote(num_cpus=1)  # please make sure main_task is not scheduled on head
+@ray.remote(num_cpus=1)  # main_task がヘッドにスケジュールされないことを確認してください
 class TaskRunner:
     """Ray remote class for executing distributed PPO training tasks.
 

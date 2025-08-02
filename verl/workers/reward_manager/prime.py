@@ -29,15 +29,14 @@ from verl.workers.reward_manager import register
 async def single_compute_score(evaluation_func, completion, reference, task, task_extra_info, executor, timeout=300.0):
     loop = asyncio.get_running_loop()
     try:
-        # Ensure process_completion is called properly
         future = loop.run_in_executor(executor, partial(evaluation_func, task, completion, reference, task_extra_info))
         return await asyncio.wait_for(future, timeout=timeout)
     except asyncio.TimeoutError:
         print(f"[Timeout] Task timeout: {completion}")
-        return None  # Default value for timed-out rows
+        return None  # タイムアウトした行のデフォルト値
     except Exception as e:
         print(f"[Error] Task failed: {e}, completion: {completion[:80]}")
-        return None  # Default value for failed rows
+        return None  # 失敗した行のデフォルト値
 
 
 async def parallel_compute_score_async(
@@ -47,10 +46,7 @@ async def parallel_compute_score_async(
         extra_info = [None] * len(tasks)
     scores = []
     with ProcessPoolExecutor(max_workers=num_processes) as executor:
-        # to prevent very occasional starvation caused by some anomalous programs ( like infinite loop ), the
-        # exceptions in async programs will instantly halt the evaluation, and all summoned processes will be killed.
         try:
-            # Create tasks for all rows
             tasks_async = [
                 single_compute_score(evaluation_func, c, r, t, ei, executor, timeout=300.0)
                 for c, r, t, ei in zip(completions, references, tasks, extra_info, strict=True)
@@ -74,10 +70,8 @@ async def parallel_compute_score_async(
                     pass
             print(f"[Shutdown] {terminated_count} subprocess(es) terminated.")
 
-    # Process results
     for result, completion, reference, task in zip(results, completions, references, tasks, strict=True):
         if isinstance(result, Exception) or result is None:
-            # Handle failed or timed-out tasks
             scores.append(0.0)
         elif isinstance(result, int | float | bool):
             scores.append(float(result))
@@ -100,7 +94,7 @@ def run_reward_scoring(evaluation_func, completions, references, tasks, extra_in
 @register("prime")
 class PrimeRewardManager:
     """
-    The Reward Manager used in https://github.com/PRIME-RL/PRIME
+    https://github.com/PRIME-RL/PRIME で使用される報酬マネージャー
     """
 
     def __init__(
@@ -111,13 +105,13 @@ class PrimeRewardManager:
         reward_fn_key: str = "data_source",
     ) -> None:
         self.tokenizer = tokenizer
-        self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
+        self.num_examine = num_examine  # コンソールに出力するデコードされた応答のバッチ数
         self.compute_score = compute_score or default_compute_score
         self.reward_fn_key = reward_fn_key
 
     def verify(self, data):
         """
-        verify the batch and save as ``acc`` tensor
+        バッチを検証し、``acc`` テンソルとして保存
         """
         # batched scoring
         prompt_ids = data.batch["prompts"]
@@ -148,9 +142,8 @@ class PrimeRewardManager:
         return scores
 
     def __call__(self, data: DataProto, return_dict: bool = False):
-        """We will expand this function gradually based on the available datasets"""
+        """利用可能なデータセットに基づいて、この関数を段階的に拡張していきます"""
 
-        # If there is rm score, we directly return rm score. Otherwise, we compute via rm_score_fn
         if "rm_scores" in data.batch.keys():
             return data.batch["rm_scores"]
 

@@ -22,15 +22,15 @@ __all__ = ["AlgoConfig", "FilterGroupsConfig", "KLControlConfig"]
 
 @dataclass
 class KLControlConfig(BaseConfig):
-    """Configuration for KL control.
+    """KL制御の設定。
 
-    The inheritance from BaseConfig provides omegaconf.DictConfig-like interface for a dataclass config.
+    BaseConfigからの継承により、dataclass設定にomegaconf.DictConfigのようなインターフェースを提供します。
 
     Args:
-        type (str): Type of KL control. Can be "fixed" or "adaptive".
-        kl_coef (float): Initial coefficient for KL penalty.
-        horizon (int): Horizon value for adaptive controller.
-        target_kl (float): Target KL divergence for adaptive controller.
+        type (str): KL制御のタイプ。"fixed"または"adaptive"を指定可能。
+        kl_coef (float): KLペナルティの初期係数。
+        horizon (int): 適応コントローラーのホライゾン値。
+        target_kl (float): 適応コントローラーの目標KL発散。
     """
 
     type: str = "fixed"
@@ -41,14 +41,14 @@ class KLControlConfig(BaseConfig):
 
 @dataclass
 class FilterGroupsConfig(BaseConfig):
-    """Configuration for filter groups (used in DAPO and Entropy).
+    """フィルターグループの設定（DAPOとEntropyで使用）。
 
-    The inheritance from BaseConfig provides omegaconf.DictConfig-like interface for a dataclass config.
+    BaseConfigからの継承により、dataclass設定にomegaconf.DictConfigのようなインターフェースを提供します。
 
     Args:
-        enable (bool): Whether to enable filter groups.
-        metric (Optional[str]): Metric to use for filtering: "acc", "score", "seq_reward", "seq_final_reward", etc.
-        max_num_gen_batches (int): Non-positive values mean no upper limit.
+        enable (bool): フィルターグループを有効にするかどうか。
+        metric (Optional[str]): フィルタリングに使用するメトリック："acc"、"score"、"seq_reward"、"seq_final_reward"など。
+        max_num_gen_batches (int): 非正の値は上限なしを意味します。
     """
 
     enable: bool = False
@@ -58,21 +58,21 @@ class FilterGroupsConfig(BaseConfig):
 
 @dataclass
 class AlgoConfig(BaseConfig):
-    """Configuration for the algorithm.
+    """アルゴリズムの設定。
 
-    The inheritance from BaseConfig provides omegaconf.DictConfig-like interface for a dataclass config.
+    BaseConfigからの継承により、dataclass設定にomegaconf.DictConfigのようなインターフェースを提供します。
 
     Args:
-        gamma (float): Discount factor for future rewards.
-        lam (float): Trade-off between bias and variance in the GAE estimator.
-        adv_estimator (str): Advantage estimator type: "gae", "grpo", "reinforce_plus_plus", etc.
-        norm_adv_by_std_in_grpo (bool): Whether to normalize advantages by std (specific to GRPO).
-        use_kl_in_reward (bool): Whether to enable in-reward KL penalty.
-        kl_penalty (str): How to estimate KL divergence: "kl", "abs", "mse", "low_var_kl", or "full".
-        kl_ctrl (KLControlConfig): KL control configuration.
-        use_pf_ppo (bool): Whether to enable preference feedback PPO.
-        pf_ppo (dict[str, Any]): Preference feedback PPO settings.
-        filter_groups (Optional[FilterGroupsConfig]): Filter groups configuration, used in DAPO and Entropy
+        gamma (float): 将来の報酬の割引係数。
+        lam (float): GAE推定器におけるバイアスと分散のトレードオフ。
+        adv_estimator (str): アドバンテージ推定器のタイプ："gae"、"grpo"、"reinforce_plus_plus"など。
+        norm_adv_by_std_in_grpo (bool): アドバンテージを標準偏差で正規化するかどうか（GRPO固有）。
+        use_kl_in_reward (bool): 報酬内KLペナルティを有効にするかどうか。
+        kl_penalty (str): KL発散の推定方法："kl"、"abs"、"mse"、"low_var_kl"、または"full"。
+        kl_ctrl (KLControlConfig): KL制御の設定。
+        use_pf_ppo (bool): 選好フィードバックPPOを有効にするかどうか。
+        pf_ppo (dict[str, Any]): 選好フィードバックPPOの設定。
+        filter_groups (Optional[FilterGroupsConfig]): フィルターグループの設定、DAPOとEntropyで使用
     """
 
     gamma: float = 1.0

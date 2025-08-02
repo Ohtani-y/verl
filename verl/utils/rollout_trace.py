@@ -21,17 +21,17 @@ from typing import Optional
 
 
 class RolloutTraceConfig:
-    """Configuration for rollout tracing with various backends.
+    """様々なバックエンドでのロールアウトトレーシングの設定。
 
-    Singleton configuration class for managing rollout trace settings across different
-    tracing backends like Weave and MLflow.
+    Weave や MLflow などの異なるトレーシングバックエンド間でロールアウトトレース設定を
+    管理するためのシングルトン設定クラス。
 
     Args:
-        backend (Optional[str]): Tracing backend to use ('weave', 'mlflow', or None).
-        client (Optional[object]): Client instance for the selected backend.
-        token2text (bool): Whether to convert tokens to text in traces. Defaults to False.
-        project_name (str): Name of the project for tracing.
-        experiment_name (str): Name of the experiment for tracing.
+        backend (Optional[str]): 使用するトレーシングバックエンド ('weave', 'mlflow', または None)。
+        client (Optional[object]): 選択されたバックエンドのクライアントインスタンス。
+        token2text (bool): トレースでトークンをテキストに変換するかどうか。デフォルトは False。
+        project_name (str): トレーシング用のプロジェクト名。
+        experiment_name (str): トレーシング用の実験名。
     """
 
     _instance: Optional["RolloutTraceConfig"] = None
@@ -103,7 +103,7 @@ class RolloutTraceConfig:
 
 @contextlib.contextmanager
 def rollout_trace_attr(sample_index=None, step=None, rollout_n=None, name="rollout_trace", validate=False):
-    """A context manager to add attributes to a trace for the configured backend."""
+    """設定されたバックエンドのトレースに属性を追加するコンテキストマネージャー。"""
     backend = RolloutTraceConfig.get_backend()
     attributes = {}
     if backend:

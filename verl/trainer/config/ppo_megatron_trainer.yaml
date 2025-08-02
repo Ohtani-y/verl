@@ -1,4 +1,3 @@
-# specify the default per-component configs
 defaults:
 
   # <folder_name>@<field_name>.<field_name>: <yaml_file_name>
@@ -8,22 +7,16 @@ defaults:
   - npu_profile@trainer.npu_profile: npu_profile
   # data: trainer/config/data/legacy_data.yaml
   - data@data: legacy_data
-  # load the reference default config, then apply the fields in the current yaml
-  # Reference model config.
-  # Reference model will be enabled when actor.use_kl_loss or/and algorithm.use_kl_in_reward is/are True.
   - ref@actor_rollout_ref.ref: megatron_ref
-  # Rollout model config.
   - rollout@actor_rollout_ref.rollout: rollout
-  # Critic model config.
   - critic@critic: megatron_critic
-  # Reward model config.
   - reward_model@reward_model: megatron_reward_model
   - _self_
 
 actor_rollout_ref:
   hybrid_engine: True
 
-  nccl_timeout: 600 # seconds, default is 10 minutes for torch, you can set it to a larger value if you have long-running operations like 32B or 72B model using megatron
+  nccl_timeout: 600 # 秒、torch のデフォルトは10分、megatron を使用した 32B や 72B モデルなどの長時間実行操作がある場合はより大きな値に設定可能
 
   model:
 
@@ -41,12 +34,11 @@ actor_rollout_ref:
 
         freeze_moe_router: False
 
-    use_fused_kernels: False # Whether to use custom fused kernels (PostProcessing, for memory efficiency)
+    use_fused_kernels: False # カスタム融合カーネルを使用するかどうか（PostProcessing、メモリ効率のため）
 
     trust_remote_code: False
 
   rollout:
-    # may get higher throughput when set to True. When activated, Please increase max_num_batched_tokens or decrease max_model_len.
     enable_chunked_prefill: False
 
     load_format: dummy_megatron
@@ -68,16 +60,14 @@ custom_reward_function:
   name: compute_score
 
 algorithm:
-  # Required when using verl.utils.omega_conf_to_dataclass to instantiate dataclass configs
   _target_: verl.trainer.config.AlgoConfig
   gamma: 1.0
   lam: 1.0
   adv_estimator: gae
   norm_adv_by_std_in_grpo: True
   use_kl_in_reward: False
-  kl_penalty: kl  # how to estimate kl divergence
+  kl_penalty: kl  # KL ダイバージェンスの推定方法
   kl_ctrl:
-    # Required when using verl.utils.omega_conf_to_dataclass to instantiate dataclass configs
     _target_: verl.trainer.config.KLControlConfig
     type: fixed
     kl_coef: 0.001

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains utilities to manipulate torch memory buffers
+torch メモリバッファを操作するためのユーティリティを含むファイル
 """
 
 from typing import Optional
@@ -25,8 +25,8 @@ from verl.utils.device import get_device_name
 
 class MemoryBuffer:
     """
-    A memory buffer is a contiguous torch tensor that may combine multiple tensors sharing with the underlying
-    memory. It must have a unique type to support this behavior.
+    メモリバッファは、基盤となるメモリを共有する複数のテンソルを結合できる連続した torch テンソルです。
+    この動作をサポートするために、一意の型を持つ必要があります。
     """
 
     def __init__(self, numel: int, numel_padded: int, dtype: torch.dtype, source: Optional[torch.Tensor] = None):
@@ -39,12 +39,12 @@ class MemoryBuffer:
             self.data = torch.zeros(self.numel_padded, dtype=self.dtype, device=get_device_name(), requires_grad=False)
 
     def zero(self):
-        """Reset the buffer to zero."""
+        """バッファをゼロにリセットします。"""
         self.data.zero_()
 
     def get(self, shape, start_index):
-        """Return a tensor with the input `shape` as a view into the
-        1-D data starting at `start_index`."""
+        """指定された `shape` を持つテンソルを、`start_index` から始まる
+        1次元データへのビューとして返します。"""
         end_index = start_index + shape.numel()
         assert end_index <= self.numel, "requested tensor is out of the buffer range."
         buffer_tensor = self.data[start_index:end_index]
@@ -53,7 +53,7 @@ class MemoryBuffer:
 
 
 def calc_padded_numel(shape: torch.Size, dtype: torch.dtype):
-    """for cuda memory alignment, make sure alignment by 128-bits"""
+    """CUDA メモリアライメントのため、128ビットでのアライメントを確保します"""
     align_numel = 128 // torch.finfo(dtype).bits
     numel = shape.numel()
     return (numel + align_numel - 1) // align_numel * align_numel
@@ -61,7 +61,7 @@ def calc_padded_numel(shape: torch.Size, dtype: torch.dtype):
 
 def get_weight_buffer_meta_from_module(module: nn.Module) -> dict[str, dict]:
     """
-    Return a dictionary containing name to a shape and dtype.
+    名前から形状とデータ型へのマッピングを含む辞書を返します。
     """
     weight_buffer_meta = {}
     for name, param in sorted(module.named_parameters()):
@@ -70,16 +70,16 @@ def get_weight_buffer_meta_from_module(module: nn.Module) -> dict[str, dict]:
 
 
 def build_memory_buffer(weight_buffer_meta: dict[str, dict]) -> dict[torch.dtype, MemoryBuffer]:
-    """Build the memory buffer given weight_buffer_meta
+    """weight_buffer_meta を使用してメモリバッファを構築します
 
     Args:
-        weight_buffer_meta: contains mapping from name to a dictionary containing shape and dtype of the tensors
+        weight_buffer_meta: テンソルの形状とデータ型を含む辞書への名前のマッピングを含む
 
-    Returns: a large memory buffer for each dtype that can hold all the tensors
+    Returns: 各データ型に対して、すべてのテンソルを保持できる大きなメモリバッファ
 
     """
     memory_buffers = {}
-    total_numel_map = {}  # map from dtype to the total numel
+    total_numel_map = {}  # データ型から総要素数へのマップ
     for name, meta_info in sorted(weight_buffer_meta.items()):
         shape = meta_info["shape"]
         dtype = meta_info["dtype"]
@@ -107,7 +107,7 @@ def build_memory_reference_from_module(
     for name, param in sorted(module.named_parameters()):
         memory_buffer = memory_buffers[param.dtype]
         buffer = memory_buffer.get(shape=param.shape, start_index=start_index[param.dtype])
-        # need to increment start_index
+        # start_index をインクリメントする必要があります
         start_index[param.dtype] += calc_padded_numel(param.shape, param.dtype)
         if maintain_weight:
             buffer.copy_(param.data)

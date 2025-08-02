@@ -49,8 +49,8 @@ def get_rope_index(
     attention_mask: Optional[torch.Tensor] = None,
 ) -> torch.Tensor:
     """
-    Gets the position ids for Qwen2-VL, it should be generated before sharding the sequence.
-    The batch dim has been removed and the input_ids should be a 1D tensor representing a single example.
+    Qwen2-VL の position_ids を取得します。シーケンスをシャーディングする前に生成する必要があります。
+    バッチ次元は削除されており、input_ids は単一の例を表す1Dテンソルである必要があります。
     https://github.com/huggingface/transformers/blob/v4.49.0/src/transformers/models/qwen2_5_vl/modeling_qwen2_5_vl.py#L1546
     """
     spatial_merge_size = processor.image_processor.merge_size
@@ -154,7 +154,7 @@ def prepare_fa2_from_position_ids(
             torch.tensor(position_ids.size(), device=position_ids.device, dtype=torch.int32),
         )
     )
-    max_length = cu_seqlens.diff().max()  # use cu_seqlens to infer max_length for qwen2vl mrope
+    max_length = cu_seqlens.diff().max()  # qwen2vl mrope の max_length を推論するために cu_seqlens を使用
     return (query, key, value, indices_q, (cu_seqlens, cu_seqlens), (max_length, max_length))
 
 
@@ -172,11 +172,10 @@ def flash_attention_forward(
     **kwargs,
 ):
     """
-    Patches flash attention forward to handle 3D position ids in mrope. (3, batch_size, seq_length)
+    mrope で 3D position_ids を処理するために flash attention forward をパッチします。(3, batch_size, seq_length)
     """
     causal = is_causal if not use_top_left_mask else is_causal and query_length != 1
 
-    # Assuming 4D tensors, key_states.shape[1] is the key/value sequence length (source length).
     use_sliding_windows = (
         _flash_supports_window_size and sliding_window is not None and key_states.shape[1] > sliding_window
     )
@@ -191,7 +190,7 @@ def flash_attention_forward(
         batch_size = query_states.size(0)
         query_states, key_states, value_states, _, cu_seq_lens, max_seq_lens = prepare_fa2_from_position_ids(
             query_states, key_states, value_states, position_ids[0]
-        )  # remove channel dimension
+        )  # チャンネル次元を削除
         cu_seqlens_q, cu_seqlens_k = cu_seq_lens
         max_seqlen_in_batch_q, max_seqlen_in_batch_k = max_seq_lens
         attn_output = flash_attn_varlen_func(
@@ -220,7 +219,7 @@ def flash_attention_forward(
             use_top_left_mask=use_top_left_mask,
             deterministic=deterministic,
             **kwargs,
-        )  # do not pass position_ids to old flash_attention_forward
+        )  # 古い flash_attention_forward に position_ids を渡さない
 
     return attn_output
 
@@ -230,7 +229,7 @@ def ulysses_flash_attn_forward(
     hidden_states: torch.Tensor,
     attention_mask: Optional[torch.Tensor] = None,
     position_ids: Optional[torch.LongTensor] = None,
-    position_embeddings: Optional[tuple[torch.Tensor, torch.Tensor]] = None,  # will become mandatory in v4.46
+    position_embeddings: Optional[tuple[torch.Tensor, torch.Tensor]] = None,  # v4.46 で必須になる予定
     **kwargs,
 ) -> tuple[torch.Tensor, None, None]:
     from transformers.models.qwen2_vl.modeling_qwen2_vl import apply_multimodal_rotary_pos_emb, repeat_kv

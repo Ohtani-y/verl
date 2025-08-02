@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The main entry point to run the PPO algorithm
+PPO アルゴリズムを実行するためのメインエントリーポイント
 """
 
 import json
@@ -107,8 +107,8 @@ def get_sharding_strategy(device_mesh):
 
 class ActorRolloutRefWorker(Worker, DistProfilerExtension):
     """
-    This worker can be instantiated as a standalone actor or a standalone rollout or a standalone reference policy
-    or a hybrid engine based on the config.rollout
+    このワーカーは、config.rollout に基づいて、スタンドアロンアクター、スタンドアロンロールアウト、
+    スタンドアロン参照ポリシー、またはハイブリッドエンジンとしてインスタンス化できます
     """
 
     def __init__(self, config: DictConfig, role: str, **kwargs):
@@ -128,12 +128,10 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
                 init_method=os.environ.get("DIST_INIT_METHOD", None),
             )
 
-        # build device mesh for FSDP
         world_size = torch.distributed.get_world_size()
-        # TODO(sgm): support FSDP hybrid shard for larger model
+        # TODO(sgm): より大きなモデル用の FSDP ハイブリッドシャードをサポート
         self.device_mesh = create_device_mesh(world_size=world_size, fsdp_size=self.config.actor.fsdp_config.fsdp_size)
 
-        # build device mesh for Ulysses Sequence Parallel
         self.ulysses_device_mesh = None
         self.ulysses_sequence_parallel_size = self.config.actor.get("ulysses_sequence_parallel_size", 1)
         dp = world_size // self.ulysses_sequence_parallel_size
@@ -154,11 +152,6 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
         self._is_ref = self.role in ["ref", "actor_rollout_ref"]
 
         # TODO(haibin.lin):
-        # As of now the type of config is DictConfig, if we assign config.profiler with ProfilerConfig,
-        # it will actually convert the ProfilerConfig dataclass back to a DictConfig.
-        # We can still use ProfilerConfig for testing purpose (tests/utils/test_nvtx_profile.py)
-        # as they provides DictConfig-like interface
-        # The benefit of creating the dataclass config is to perform validation during __post_init__
         profiler_config = omega_conf_to_dataclass(config.get("profiler"))
         DistProfilerExtension.__init__(
             self, DistProfiler(rank=self.rank, config=profiler_config, option=self.profile_option)
@@ -170,10 +163,8 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
             self._is_offload_param = self.config.actor.fsdp_config.get("param_offload", False)
             self._is_offload_optimizer = self.config.actor.fsdp_config.get("optimizer_offload", False)
         elif self._is_ref:
-            # TODO: it seems that manual offload is slowly than FSDP offload
             self._is_offload_param = self.config.ref.fsdp_config.get("param_offload", False)
 
-        # normalize config
         if self._is_actor:
             self.config.actor.ppo_mini_batch_size *= self.config.rollout.n
             self.config.actor.ppo_mini_batch_size //= self.device_mesh.size() // self.ulysses_sequence_parallel_size
@@ -181,7 +172,6 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
                 f"ppo_mini_batch_size {self.config.actor.ppo_mini_batch_size} should be larger than 0 after "
                 f"normalization"
             )
-            # micro bsz
             if self.config.actor.ppo_micro_batch_size is not None:
                 self.config.actor.ppo_micro_batch_size //= (
                     self.device_mesh.size() // self.ulysses_sequence_parallel_size
@@ -198,13 +188,11 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
                     f"ppo_micro_batch_size_per_gpu {self.config.actor.ppo_micro_batch_size_per_gpu}"
                 )
 
-        # normalize rollout config
         if self._is_rollout and self.config.rollout.log_prob_micro_batch_size is not None:
             self.config.rollout.log_prob_micro_batch_size //= (
                 self.device_mesh.size() // self.ulysses_sequence_parallel_size
             )
             self.config.rollout.log_prob_micro_batch_size_per_gpu = self.config.rollout.log_prob_micro_batch_size
-        # normalize ref config
         if self._is_ref and self.config.ref.log_prob_micro_batch_size is not None:
             self.config.ref.log_prob_micro_batch_size //= self.device_mesh.size() // self.ulysses_sequence_parallel_size
             self.config.ref.log_prob_micro_batch_size_per_gpu = self.config.ref.log_prob_micro_batch_size
@@ -235,8 +223,7 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
         log_gpu_memory_usage(f"Before init {role} from HF AutoModel", logger=logger)
         local_path = model_path
 
-        # note that we have to create model in fp32. Otherwise, the optimizer is in bf16, which is incorrect
-        # TODO(zhangchi.usc1992): 1. support create from random initialized model. 2. Support init with FSDP directly
+        # TODO(zhangchi.usc1992): 1. ランダム初期化モデルからの作成をサポート 2. FSDP での直接初期化をサポート
         self.tokenizer = hf_tokenizer(local_path, trust_remote_code=trust_remote_code)
         self.processor = hf_processor(local_path, trust_remote_code=trust_remote_code)
 
@@ -252,7 +239,6 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
         else:
             torch_dtype = PrecisionType.to_dtype(torch_dtype)
 
-        # override model kwargs
         actor_model_config = AutoConfig.from_pretrained(
             local_path, trust_remote_code=trust_remote_code, attn_implementation="flash_attention_2"
         )
@@ -463,7 +449,7 @@ class ActorRolloutRefWorker(Worker, DistProfilerExtension):
     def _build_rollout(self, trust_remote_code=False):
         from torch.distributed.device_mesh import init_device_mesh
 
-        # TODO(sgm): support FSDP hybrid shard for larger model
+        # TODO(sgm): より大きなモデル用の FSDP ハイブリッドシャードをサポート
         infer_tp = self.config.rollout.tensor_model_parallel_size
         dp = self.world_size // infer_tp
         assert self.world_size % infer_tp == 0, (
@@ -930,7 +916,6 @@ class CriticWorker(Worker, DistProfilerExtension):
             )
         self.config: FSDPCriticConfig = config
 
-        # build device mesh for Ulysses Sequence Parallel
         world_size = torch.distributed.get_world_size()
         from torch.distributed.device_mesh import init_device_mesh
 
@@ -951,7 +936,6 @@ class CriticWorker(Worker, DistProfilerExtension):
         self._is_offload_param = self.config.model.fsdp_config.param_offload
         self._is_offload_optimizer = self.config.model.fsdp_config.optimizer_offload
 
-        # normalize config
         self.config.ppo_mini_batch_size *= self.config.rollout_n
         self.config.ppo_mini_batch_size //= torch.distributed.get_world_size() // self.ulysses_sequence_parallel_size
         if self.config.ppo_micro_batch_size is not None:
@@ -1324,7 +1308,6 @@ class RewardModelWorker(Worker, DistProfilerExtension):
             )
         self.config = config
 
-        # build device mesh for Ulysses Sequence Parallel
         world_size = torch.distributed.get_world_size()
         from torch.distributed.device_mesh import init_device_mesh
 
@@ -1343,7 +1326,6 @@ class RewardModelWorker(Worker, DistProfilerExtension):
 
         self.use_remove_padding = self.config.model.get("use_remove_padding", False)
 
-        # normalize config
         if self.config.micro_batch_size is not None:
             self.config.micro_batch_size //= torch.distributed.get_world_size()
             self.config.micro_batch_size_per_gpu = self.config.micro_batch_size

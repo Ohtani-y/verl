@@ -37,7 +37,6 @@ class ToolAgentLoop(AgentLoopBase):
         cls._class_initialized = True
         print("Performing class-level ToolAgentLoop initialization")
 
-        # Initialize tools from config file
         cls.tokenizer = tokenizer
         cls.max_user_turns = config.actor_rollout_ref.rollout.multi_turn.max_user_turns
         cls.max_assistant_turns = config.actor_rollout_ref.rollout.multi_turn.max_assistant_turns
@@ -79,24 +78,19 @@ class ToolAgentLoop(AgentLoopBase):
             response_mask += [1] * len(response_ids)
             assistant_turns += 1
 
-            # reach max response length
             if len(response_mask) >= self.response_length:
                 break
 
-            # reach max assistant turns
             if self.max_assistant_turns and assistant_turns >= self.max_assistant_turns:
                 break
 
-            # reach max user turns
             if self.max_user_turns and user_turns >= self.max_user_turns:
                 break
 
-            # no tool calls
             _, tool_calls = await self.tool_parser.extract_tool_calls(response_ids)
             if not tool_calls:
                 break
 
-            # call tools
             tasks = []
             for tool_call in tool_calls[: self.max_parallel_calls]:
                 tasks.append(self._call_tool(tool_call, tools_kwargs))
@@ -105,7 +99,7 @@ class ToolAgentLoop(AgentLoopBase):
             if any(isinstance(item, Exception) for item in tool_responses):
                 break
 
-            # append tool_response_ids
+            # tool_response_ids を追加
             tool_response_ids = await self.loop.run_in_executor(
                 None,
                 lambda messages=tool_responses: self.tokenizer.apply_chat_template(
@@ -114,8 +108,6 @@ class ToolAgentLoop(AgentLoopBase):
             )
             tool_response_ids = tool_response_ids[len(self.system_prompt) :]
 
-            # NOTE: last turn should not be user turn, or the EOS token reward
-            # can't be propagated to previous token in GAE.
             if len(response_mask) + len(tool_response_ids) >= self.response_length:
                 break
 
@@ -136,10 +128,9 @@ class ToolAgentLoop(AgentLoopBase):
         return output
 
     async def _call_tool(self, tool_call: FunctionCall, tools_kwargs: dict[str, Any]) -> dict[str, str]:
-        """Call tool and return tool response."""
+        """ツールを呼び出してツールレスポンスを返す。"""
         tool, instance_id = None, None
         try:
-            # TODO: append malformed tool_call to the prompt: invalid function name or arguments
             tool_name = tool_call.name
             tool_args = json.loads(tool_call.arguments)
             tool = self.tools[tool_name]

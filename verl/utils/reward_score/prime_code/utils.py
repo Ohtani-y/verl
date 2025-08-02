@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Borrowed from: https://huggingface.co/spaces/codeparrot/apps_metric/blob/main/utils.py
+# 借用元: https://huggingface.co/spaces/codeparrot/apps_metric/blob/main/utils.py
 
 import multiprocessing
 import os
@@ -32,16 +32,16 @@ def _temp_run(sample, generation, debug, result, metadata_list, timeout):
             result.append(res)
             metadata_list.append(metadata)
         except Exception:
-            # print(e) # some tracebacks are extremely long.
+            # print(e) # 一部のトレースバックは非常に長い
             traceback.print_exc(10)
             result.append([-1 for i in range(len(sample["inputs"]))])
             metadata_list.append({})
 
 
 def check_correctness(in_outs: Optional[dict], generation, timeout=10, debug=True):
-    """Check correctness of code generation with a global timeout.
-    The global timeout is to catch some extreme/rare cases not handled by the timeouts
-    inside `run_test`"""
+    """グローバルタイムアウトを使用してコード生成の正確性をチェックします。
+    グローバルタイムアウトは、`run_test`内のタイムアウトで処理されない
+    極端/稀なケースをキャッチするためのものです"""
 
     manager = multiprocessing.Manager()
     result = manager.list()
@@ -53,8 +53,7 @@ def check_correctness(in_outs: Optional[dict], generation, timeout=10, debug=Tru
         p.kill()
         # p.terminate()
     if not result:
-        # consider that all tests failed
         result = [[-1 for i in range(len(in_outs["inputs"]))]]
         if debug:
-            print("global timeout")
+            print("グローバルタイムアウト")
     return result[0], metadata_list

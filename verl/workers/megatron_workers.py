@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The main entry point to run the PPO algorithm
+PPO アルゴリズムを実行するためのメインエントリーポイント
 """
 
 import datetime
@@ -81,7 +81,7 @@ def set_random_seed(seed):
         from megatron.core import tensor_parallel
 
         tensor_parallel.model_parallel_cuda_manual_seed(seed)
-    # FIXME: torch cumsum not support deterministic (used in vllm sampler),
+    # FIXME: torch cumsum は決定論的をサポートしていない（vllm sampler で使用）
     # https://github.com/pytorch/pytorch/issues/89492
     # torch.use_deterministic_algorithms(True, warn_only=True)
     # os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
@@ -89,15 +89,15 @@ def set_random_seed(seed):
 
 class ActorRolloutRefWorker(MegatronWorker, DistProfilerExtension):
     """
-    This worker can be instantiated as a standalone actor or a standalone rollout or a standalone reference policy
-    or a hybrid engine based on the config.rollout
+    このワーカーは、config.rollout に基づいて、スタンドアロンのアクター、スタンドアロンのロールアウト、
+    スタンドアロンのリファレンスポリシー、またはハイブリッドエンジンとしてインスタンス化できます
     """
 
     def __init__(self, config: DictConfig, role: str, **kwargs):
         MegatronWorker.__init__(self)
         self.config = config
         if repatch is not None:
-            # NPU MindSpeed patch, will be refactored with MindSpeedEngine.
+            # NPU MindSpeed パッチ、MindSpeedEngine でリファクタリング予定
             repatch(self.config.actor.megatron.get("override_transformer_config", {}))
 
         # NOTE(sgm): We utilize colocate WorkerGroup by default.
@@ -139,8 +139,7 @@ class ActorRolloutRefWorker(MegatronWorker, DistProfilerExtension):
         profiler_config = omega_conf_to_dataclass(config.get("profiler"))
         DistProfilerExtension.__init__(self, DistProfiler(rank=self.rank, config=profiler_config))
 
-        # TODO(sgm): Currently, we only support reference model param offload
-        # will support other offload later
+        # TODO(sgm): 現在、リファレンスモデルのパラメータオフロードのみサポート
         self._is_offload_param = False
         self._is_offload_grad = False
         self._is_offload_optimizer = False
@@ -295,8 +294,7 @@ class ActorRolloutRefWorker(MegatronWorker, DistProfilerExtension):
             from verl.workers.rollout.vllm_rollout import vLLMRollout
             from verl.workers.sharding_manager.megatron_vllm import MegatronVLLMShardingManager
 
-            # NOTE(sgm): If the QKV and gate_up projection layer are concate together in actor,
-            # we will reorganize their weight format when resharding from actor to rollout.
+            # NOTE(sgm): アクターで QKV と gate_up 投影層が連結されている場合、
 
             infer_tp = self.config.rollout.tensor_model_parallel_size
             dp = self.world_size // infer_tp
@@ -322,7 +320,6 @@ class ActorRolloutRefWorker(MegatronWorker, DistProfilerExtension):
             )
             log_gpu_memory_usage("After building vllm rollout", logger=logger)
 
-            # perform weight resharding between actor and rollout
             from verl.models.mcore import get_mcore_weight_converter
 
             weight_converter = get_mcore_weight_converter(self.actor_model_config, self.dtype)
@@ -343,13 +340,8 @@ class ActorRolloutRefWorker(MegatronWorker, DistProfilerExtension):
         elif self.config.rollout.name == "sglang":
             from verl.workers.rollout.sglang_rollout.sglang_rollout import SGLangRollout
 
-            # NOTE(linjunrong): Due to recent fp8 support in SGLang. Now importing any symbol relate to SGLang's
-            # model_runner would check CUDA device capability.
-            # However, due to verl's setting, the main process of ray can not find any CUDA device, which would
-            # potentially lead to: "RuntimeError: No CUDA GPUs are available".
-            # For this reason, sharding_manager.__init__ should not import FSDPSGLangShardingManager and we import it
-            # here use the abs path.
-            # check: https://github.com/sgl-project/sglang/blob/00f42707eaddfc2c0528e5b1e0094025c640b7a0/python/sglang/srt/layers/quantization/fp8_utils.py#L76
+            # NOTE(linjunrong): SGLang の最近の fp8 サポートにより、SGLang の model_runner に関連する
+            # 参照: https://github.com/sgl-project/sglang/blob/00f42707eaddfc2c0528e5b1e0094025c640b7a0/python/sglang/srt/layers/quantization/fp8_utils.py#L76
             from verl.workers.sharding_manager.megatron_sglang import MegatronSGLangShardingManager
 
             infer_tp = self.config.rollout.tensor_model_parallel_size

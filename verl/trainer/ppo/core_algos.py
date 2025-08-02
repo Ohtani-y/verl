@@ -13,9 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Core functions to implement PPO algorithms.
-The function implemented in this file should be used by trainer with different distributed strategies to
-implement PPO-like algorithms.
+PPO アルゴリズムを実装するためのコア関数。
+このファイルで実装された関数は、異なる分散戦略を持つトレーナーが
+PPO ライクなアルゴリズムを実装するために使用されるべきです。
 """
 
 __all__ = ["register_adv_est", "get_adv_estimator_fn", "AdvantageEstimator"]
@@ -49,13 +49,13 @@ POLICY_LOSS_REGISTRY: dict[str, PolicyLossFn] = {}
 
 
 def register_policy_loss(name: str) -> Callable[[PolicyLossFn], PolicyLossFn]:
-    """Register a policy loss function with the given name.
+    """指定された名前でポリシー損失関数を登録します。
 
     Args:
-        name (str): The name to register the policy loss function under.
+        name (str): ポリシー損失関数を登録する名前。
 
     Returns:
-        function: Decorator function that registers the policy loss function.
+        function: ポリシー損失関数を登録するデコレータ関数。
     """
 
     def decorator(func: PolicyLossFn) -> PolicyLossFn:
@@ -66,14 +66,14 @@ def register_policy_loss(name: str) -> Callable[[PolicyLossFn], PolicyLossFn]:
 
 
 def get_policy_loss_fn(name):
-    """Get the policy loss with a given name.
+    """指定された名前のポリシー損失を取得します。
 
     Args:
         name: `(str)`
-            The name of the policy loss.
+            ポリシー損失の名前。
 
     Returns:
-        `(callable)`: The policy loss function.
+        `(callable)`: ポリシー損失関数。
     """
     loss_name = name
     if loss_name not in POLICY_LOSS_REGISTRY:
@@ -84,12 +84,12 @@ def get_policy_loss_fn(name):
 
 
 class AdvantageEstimator(str, Enum):
-    """Using an enumeration class to avoid spelling errors in adv_estimator.
+    """adv_estimator でのスペルミスを避けるための列挙クラス。
 
-    Note(haibin.lin): this enum class is immutable after creation. Extending this
-    enum for new estimators may not be necessary since users can always just call
-    `verl.trainer.ppo.core_algos.register` with string name for a custom advantage
-    estimator instead.
+    Note(haibin.lin): この enum クラスは作成後は不変です。新しい推定器のために
+    この enum を拡張する必要はないかもしれません。ユーザーは常に
+    `verl.trainer.ppo.core_algos.register` を文字列名で呼び出して
+    カスタムアドバンテージ推定器を登録できるためです。
     """
 
     GAE = "gae"
@@ -107,11 +107,11 @@ ADV_ESTIMATOR_REGISTRY: dict[str, Any] = {}
 
 
 def register_adv_est(name_or_enum: str | AdvantageEstimator) -> Any:
-    """Decorator to register a advantage estimator function with a given name.
+    """指定された名前でアドバンテージ推定器関数を登録するデコレータ。
 
     Args:
         name_or_enum: `(str)` or `(AdvantageEstimator)`
-            The name or enum of the advantage estimator.
+            アドバンテージ推定器の名前または enum。
 
     """
 
@@ -128,14 +128,14 @@ def register_adv_est(name_or_enum: str | AdvantageEstimator) -> Any:
 
 
 def get_adv_estimator_fn(name_or_enum):
-    """Get the advantage estimator function with a given name.
+    """指定された名前のアドバンテージ推定器関数を取得します。
 
     Args:
         name_or_enum: `(str)` or `(AdvantageEstimator)`
-            The name or enum of the advantage estimator.
+            アドバンテージ推定器の名前または enum。
 
     Returns:
-        `(callable)`: The advantage estimator function.
+        `(callable)`: アドバンテージ推定器関数。
     """
     name = name_or_enum.value if isinstance(name_or_enum, Enum) else name_or_enum
     if name not in ADV_ESTIMATOR_REGISTRY:
@@ -145,7 +145,7 @@ def get_adv_estimator_fn(name_or_enum):
 
 class AdaptiveKLController:
     """
-    Adaptive KL controller described in the paper:
+    論文で説明されている適応的 KL コントローラー:
     https://arxiv.org/pdf/1909.08593.pdf
     """
 

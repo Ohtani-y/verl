@@ -23,14 +23,14 @@ from verl.workers.reward_manager import register
 @register("batch")
 class BatchRewardManager:
     """
-    A batch reward manager that computes rewards for a batch of data.
+    データのバッチに対して報酬を計算するバッチ報酬マネージャー。
 
     Args:
-        tokenizer (Tokenizer): The tokenizer to use for decoding the responses.
-        num_examine (int): The number of responses to examine.
-        compute_score (callable): The function to compute the rewards.
-        reward_fn_key (str): The key to use for the reward function.
-        reward_kwargs (dict): The keyword arguments to pass to the reward function.
+        tokenizer (Tokenizer): レスポンスをデコードするために使用するトークナイザー。
+        num_examine (int): 検査するレスポンスの数。
+        compute_score (callable): 報酬を計算する関数。
+        reward_fn_key (str): 報酬関数に使用するキー。
+        reward_kwargs (dict): 報酬関数に渡すキーワード引数。
     """
 
     def __init__(self, tokenizer, num_examine, compute_score, reward_fn_key="data_source", **reward_kwargs):
@@ -70,7 +70,6 @@ class BatchRewardManager:
         return scores
 
     def __call__(self, data: DataProto, return_dict=False):
-        # If there is rm score, we directly return rm score. Otherwise, we compute via rm_score_fn
         if "rm_scores" in data.batch.keys():
             if return_dict:
                 return {"reward_tensor": data.batch["rm_scores"]}

@@ -23,7 +23,7 @@ logger = logging.getLogger(__file__)
 
 class TokenBucket:
     def __init__(self, rate_limit: float):
-        self.rate_limit = rate_limit  # tokens per second
+        self.rate_limit = rate_limit  # 1秒あたりのトークン数
         self.tokens = rate_limit
         self.last_update = time.time()
         self.lock = threading.Lock()
@@ -31,7 +31,6 @@ class TokenBucket:
     def acquire(self) -> bool:
         with self.lock:
             now = time.time()
-            # Add new tokens based on time elapsed
             new_tokens = (now - self.last_update) * self.rate_limit
             self.tokens = min(self.rate_limit, self.tokens + new_tokens)
             self.last_update = now
@@ -43,7 +42,7 @@ class TokenBucket:
 
 
 def mcp2openai(mcp_tool: Tool) -> dict:
-    """Convert a MCP Tool to an OpenAI ChatCompletionTool."""
+    """MCP Tool を OpenAI ChatCompletionTool に変換する。"""
     openai_format = {
         "type": "function",
         "function": {

@@ -28,16 +28,16 @@ from verl.utils.device import get_device_name, get_torch_device
 
 class BaseCheckpointManager:
     """
-    A checkpoint manager that saves and loads the following states in a SPMD way:
+    SPMD方式で以下の状態を保存・読み込みするチェックポイントマネージャー:
     - model
     - optimizer
     - lr_scheduler
     - extra_states
 
-    We save
-    - sharded model states and optimizer states
-    - full lr_scheduler states
-    - huggingface tokenizer and config for ckpt merge
+    保存内容:
+    - シャード化されたモデル状態とオプティマイザー状態
+    - 完全なlr_scheduler状態
+    - チェックポイントマージ用のhuggingface tokenizerと設定
     """
 
     def __init__(
@@ -71,50 +71,49 @@ class BaseCheckpointManager:
     @property
     def should_save_model(self) -> bool:
         """
-        Returns True if 'model' is in checkpoint_save_contents, indicating the model state should be saved.
+        checkpoint_save_contentsに'model'が含まれている場合Trueを返し、モデル状態を保存すべきことを示す。
         """
         return "model" in self.checkpoint_save_contents
 
     @property
     def should_save_optimizer(self) -> bool:
         """
-        Returns True if 'optimizer' is in checkpoint_save_contents, indicating the optimizer state should be saved.
+        checkpoint_save_contentsに'optimizer'が含まれている場合Trueを返し、オプティマイザー状態を保存すべきことを示す。
         """
         return "optimizer" in self.checkpoint_save_contents
 
     @property
     def should_save_extra(self) -> bool:
         """
-        Returns True if 'extra' is in checkpoint_save_contents, indicating the extra state should be saved.
+        checkpoint_save_contentsに'extra'が含まれている場合Trueを返し、追加状態を保存すべきことを示す。
         """
         return "extra" in self.checkpoint_save_contents
 
     @property
     def should_save_hf_model(self) -> bool:
         """
-        Returns True if 'hf_model' is in checkpoint_save_contents, indicating the model should be converted to hf
-        model and saved.
+        checkpoint_save_contentsに'hf_model'が含まれている場合Trueを返し、モデルをHugging Faceモデルに変換して保存すべきことを示す。
         """
         return "hf_model" in self.checkpoint_save_contents
 
     @property
     def should_load_model(self) -> bool:
         """
-        Returns True if 'model' is in checkpoint_load_contents, indicating the model state should be loaded.
+        checkpoint_load_contentsに'model'が含まれている場合Trueを返し、モデル状態を読み込むべきことを示す。
         """
         return "model" in self.checkpoint_load_contents
 
     @property
     def should_load_optimizer(self) -> bool:
         """
-        Returns True if 'optimizer' is in checkpoint_load_contents, indicating the optimizer state should be loaded.
+        checkpoint_load_contentsに'optimizer'が含まれている場合Trueを返し、オプティマイザー状態を読み込むべきことを示す。
         """
         return "optimizer" in self.checkpoint_load_contents
 
     @property
     def should_load_extra(self) -> bool:
         """
-        Returns True if 'extra' is in checkpoint_load_contents, indicating the extra state should be loaded.
+        checkpoint_load_contentsに'extra'が含まれている場合Trueを返し、追加状態を読み込むべきことを示す。
         """
         return "extra" in self.checkpoint_load_contents
 

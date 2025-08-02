@@ -18,11 +18,11 @@ REWARD_MANAGER_REGISTRY = {}
 
 
 def register(name):
-    """Decorator to register a reward manager class with a given name.
+    """指定された名前で報酬マネージャークラスを登録するデコレータ。
 
     Args:
         name: `(str)`
-            The name of the reward manager.
+            報酬マネージャーの名前。
     """
 
     def decorator(cls):
@@ -37,14 +37,14 @@ def register(name):
 
 
 def get_reward_manager_cls(name):
-    """Get the reward manager class with a given name.
+    """指定された名前の報酬マネージャークラスを取得する。
 
     Args:
         name: `(str)`
-            The name of the reward manager.
+            報酬マネージャーの名前。
 
     Returns:
-        `(type)`: The reward manager class.
+        `(type)`: 報酬マネージャークラス。
     """
     if name not in REWARD_MANAGER_REGISTRY:
         raise ValueError(f"Unknown reward manager: {name}")

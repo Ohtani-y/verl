@@ -30,32 +30,28 @@ from verl.utils.megatron_utils import unwrap_model
 def _megatron_calc_global_rank(
     tp_rank: int = 0, dp_rank: int = 0, pp_rank: int = 0, cp_rank: int = 0, ep_rank: int = 0
 ):
-    """Calculate global rank with support for CP/EP parallelism"""
+    """CP/EP 並列化をサポートしたグローバルランクの計算"""
 
-    # Get parallel sizes for each dimension
     tp_size = mpu.get_tensor_model_parallel_world_size()
     dp_size = mpu.get_data_parallel_world_size()
     pp_size = mpu.get_pipeline_model_parallel_world_size()
     cp_size = mpu.get_context_parallel_world_size()
     # ep_size = mpu.get_expert_model_parallel_world_size()
 
-    # Verify total GPU count matches (must be consistent with parallel_state.py)
     total_size = tp_size * dp_size * pp_size * cp_size
     assert total_size == torch.distributed.get_world_size(), (
         f"{tp_size}x{dp_size}x{pp_size}x{cp_size} != {torch.distributed.get_world_size()}"
     )
 
-    # Core calculation logic (corresponds to RankGenerator order parameter)
-    # Assumes default order is "tp-cp-ep-dp-pp"
     return ((pp_rank * dp_size + dp_rank) * cp_size + cp_rank) * tp_size + tp_rank
 
 
 def _megatron_calc_layer_map(config):
-    """Calculate the mapping of global layer_idx to local layer_idx
+    """グローバル layer_idx からローカル layer_idx へのマッピングを計算
     Returns:
         layer_map (Dict: int -> tuple(int, int, int)):
-            mapping from the global layer index to
-            a tuple of (pp_rank, virtual_pp_rank, layer_idx inside model)
+            グローバルレイヤーインデックスから
+            (pp_rank, virtual_pp_rank, モデル内の layer_idx) のタプルへのマッピング
     """
     from megatron.core import mpu
 

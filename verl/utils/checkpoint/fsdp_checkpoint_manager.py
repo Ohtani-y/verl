@@ -34,18 +34,17 @@ from verl.utils.logger import log_with_rank
 
 from .checkpoint_manager import BaseCheckpointManager
 
-# Setup logging
 logger = logging.getLogger(__file__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "INFO"))
 
 
 @dataclass
 class FSDPConfig:
-    """Configuration for FSDP checkpointing.
+    """FSDP チェックポイント用の設定。
 
     Args:
-        FSDP_version (int): Version of FSDP being used.
-        world_size (int): Number of processes in the distributed training setup.
+        FSDP_version (int): 使用している FSDP のバージョン。
+        world_size (int): 分散トレーニング設定でのプロセス数。
     """
 
     FSDP_version: int
@@ -54,21 +53,21 @@ class FSDPConfig:
 
 class FSDPCheckpointManager(BaseCheckpointManager):
     """
-    Manage FSDP checkpointing in SPMD training.
+    SPMD トレーニングでの FSDP チェックポイント管理。
 
-    - Saves/loads per-rank sharded model & optimizer states
-    - Persists full lr_scheduler and RNG state
-    - Stores HF tokenizer/processor and model/config for unified restore
+    - ランクごとのシャード化されたモデルとオプティマイザの状態を保存/読み込み
+    - 完全な lr_scheduler と RNG 状態を永続化
+    - 統一復元のため HF tokenizer/processor とモデル/設定を保存
 
     Args:
-        model (FSDP): Wrapped model instance.
-        optimizer (Optimizer): Training optimizer.
-        lr_scheduler (LRScheduler): Learning-rate scheduler.
+        model (FSDP): ラップされたモデルインスタンス。
+        optimizer (Optimizer): トレーニングオプティマイザ。
+        lr_scheduler (LRScheduler): 学習率スケジューラ。
         processing_class (PreTrainedTokenizer or ProcessorMixin, optional):
-            Pre-/post-processing artifact handler.
-        checkpoint_contents DictConfig: Configuration for checkpoint contents.
-            - 'load': Components to load; must contain 'model'. Defaults to ['model', 'optimizer', 'extra'].
-            - 'save': Components to save; must contain 'model'. Defaults to ['model', 'optimizer', 'extra'].
+            前処理/後処理アーティファクトハンドラ。
+        checkpoint_contents DictConfig: チェックポイント内容の設定。
+            - 'load': 読み込むコンポーネント; 'model' を含む必要がある。デフォルトは ['model', 'optimizer', 'extra']。
+            - 'save': 保存するコンポーネント; 'model' を含む必要がある。デフォルトは ['model', 'optimizer', 'extra']。
     """
 
     def __init__(
@@ -97,21 +96,21 @@ class FSDPCheckpointManager(BaseCheckpointManager):
 
     def load_checkpoint(self, local_path: str, hdfs_path: str = None, del_local_after_load=False):
         """
-        Load an FSDP checkpoint for this rank.
+        このランクの FSDP チェックポイントを読み込み。
 
-        Downloads and loads:
-          - model and optimizer shards
-          - extra state dict (scheduler + RNG)
+        以下をダウンロードして読み込み:
+          - モデルとオプティマイザのシャード
+          - 追加状態辞書 (スケジューラ + RNG)
 
         Args:
-            local_path: Directory with per-rank checkpoint files.
-            hdfs_path: Unused (for API compatibility).
-            del_local_after_load: Remove local files after loading.
+            local_path: ランクごとのチェックポイントファイルがあるディレクトリ。
+            hdfs_path: 未使用 (API 互換性のため)。
+            del_local_after_load: 読み込み後にローカルファイルを削除。
         """
         if local_path is None:
             return
 
-        # check if the checkpoint_load_contents is valid
+        # checkpoint_load_contents が有効かチェック
         if self.should_load_model:
             assert self.model is not None, "model must be provided when checkpoint_contents.load includes ['model']"
         if self.should_load_optimizer:
@@ -119,7 +118,6 @@ class FSDPCheckpointManager(BaseCheckpointManager):
                 "optimizer must be provided when checkpoint_contents.load includes ['optimizer']"
             )
 
-        # every rank download its own checkpoint
         state_dict_cfg = (
             ShardedStateDictConfig(offload_to_cpu=True if is_cuda_available else False)
             if self.should_load_model

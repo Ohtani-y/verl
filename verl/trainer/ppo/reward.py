@@ -23,32 +23,32 @@ from verl.utils.reward_score import default_compute_score
 
 
 def _call_with_kwargs(raw_fn, extra_kwargs, *args, **kwargs):
-    """Calls `raw_fn` by merging `extra_kwargs` into call-time `kwargs`, with `extra_kwargs` taking precedence.
+    """実行時の `kwargs` に `extra_kwargs` をマージして `raw_fn` を呼び出します。`extra_kwargs` が優先されます。
 
-    This function is used to merge additional keyword arguments with the original function's arguments.
+    この関数は、元の関数の引数に追加のキーワード引数をマージするために使用されます。
     """
     merged_kwargs = {**kwargs, **extra_kwargs}
     return raw_fn(*args, **merged_kwargs)
 
 
 def get_custom_reward_fn(config):
-    """Load and return a custom reward function from external file.
+    """外部ファイルからカスタム報酬関数を読み込んで返します。
 
-    Dynamically imports a reward function from a specified file path and wraps
-    it with additional keyword arguments from the configuration.
+    指定されたファイルパスから報酬関数を動的にインポートし、
+    設定からの追加キーワード引数でラップします。
 
     Args:
-        config (dict): Configuration dictionary containing custom_reward_function
-                      settings with 'path', 'name', and 'reward_kwargs' fields.
+        config (dict): 'path'、'name'、'reward_kwargs' フィールドを含む
+                      custom_reward_function 設定を含む設定辞書。
 
     Returns:
-        callable or None: Wrapped reward function with merged kwargs, or None
-                         if no custom reward function is configured.
+        callable or None: マージされた kwargs を持つラップされた報酬関数、
+                         またはカスタム報酬関数が設定されていない場合は None。
 
     Raises:
-        FileNotFoundError: If the specified reward function file doesn't exist.
-        RuntimeError: If there's an error loading the module from file.
-        AttributeError: If the specified function name isn't found in the module.
+        FileNotFoundError: 指定された報酬関数ファイルが存在しない場合。
+        RuntimeError: ファイルからモジュールを読み込む際にエラーが発生した場合。
+        AttributeError: 指定された関数名がモジュール内に見つからない場合。
     """
     import importlib.util
     import sys
@@ -83,27 +83,23 @@ def get_custom_reward_fn(config):
 
 def load_reward_manager(config, tokenizer, num_examine, **reward_kwargs):
     """
-    Load and initialize a reward manager based on the configuration.
+    設定に基づいて報酬マネージャーを読み込み、初期化します。
 
     Args:
-        config: PPO trainer configuration object containing reward_model fields.
-        tokenizer: Tokenizer object used for processing text.
-        num_examine: Number of samples to examine.
-        **reward_kwargs: Additional keyword arguments for the reward manager.
+        config: reward_model フィールドを含む PPO trainer 設定オブジェクト。
+        tokenizer: テキスト処理に使用される Tokenizer オブジェクト。
+        num_examine: 検査するサンプル数。
+        **reward_kwargs: 報酬マネージャーの追加キーワード引数。
 
     Returns:
-        An instance of the specified reward manager class.
+        指定された報酬マネージャークラスのインスタンス。
     """
     from verl.workers.reward_manager import get_reward_manager_cls
 
-    # The list of pre-defined reward managers are defined in `verl/workers/reward_manager/`:
     # naive: NaiveRewardManager
     # prime: PrimeRewardManager
     # batch: BatchRewardManager
     # dapo: DAPORewardManager
-    # Note(haibin.lin): For custom reward managers, please make sure they are imported and
-    # registered via `verl.workers.reward_manager.register`
-    # By default reward_manager is set to naive (NaiveRewardManager)
     reward_manager_name = config.reward_model.get("reward_manager", "naive")
     reward_manager_cls = get_reward_manager_cls(reward_manager_name)
 

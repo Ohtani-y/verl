@@ -20,9 +20,9 @@ __all__ = ["BaseRollout"]
 
 
 class BaseRollout(ABC):
-    """Base class for rollout."""
+    """ロールアウトのベースクラス。"""
 
     @abstractmethod
     def generate_sequences(self, prompts: DataProto) -> DataProto:
-        """Generate sequences"""
+        """シーケンスを生成する"""
         pass

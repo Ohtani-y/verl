@@ -32,8 +32,8 @@ from verl.utils import hf_processor, hf_tokenizer
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="verl model merger")
-    subparsers = parser.add_subparsers(dest="operation", required=True, help="Specify 'merge' or 'test' operation.")
+    parser = argparse.ArgumentParser(description="verl モデルマージャー")
+    subparsers = parser.add_subparsers(dest="operation", required=True, help="'merge' または 'test' 操作を指定してください。")
 
     base_op_parser = argparse.ArgumentParser(add_help=False)
     base_op_parser.add_argument(
@@ -82,27 +82,25 @@ def parse_args():
 
 @dataclass
 class ModelMergerConfig:
-    """Configuration for model merger operations.
+    """モデルマージャー操作の設定。
 
     Args:
-        operation (str): Operation type - 'merge' or 'test'.
-        backend (str): Backend type for the model ('fsdp' or 'megatron').
-        target_dir (Optional[str]): Directory to save the merged huggingface model. Defaults to "tmp".
-        hf_upload_path (Optional[str]): Hugging Face repository ID to upload the model. Defaults to None.
-        private (bool): Whether to upload the model to a private Hugging Face repository. Defaults to False.
-        test_hf_dir (Optional[str]): Path to the reference Hugging Face model directory for testing. Defaults to None.
-        tie_word_embedding (bool): Whether to tie word embedding weights (currently only Megatron
-            supported). Defaults to False.
-        trust_remote_code (bool): Whether to trust remote code. Defaults to False.
-        is_value_model (bool): Whether the model is a value model (currently only Megatron
-            supported). Defaults to False.
-        local_dir (Optional[str]): Path to the saved model checkpoints. Defaults to None.
-        hf_model_config_path (Optional[str]): Path to HuggingFace model configuration files. Defaults to None.
-        hf_upload (bool): Whether to upload to HuggingFace (computed automatically). Not for initialization.
-        use_cpu_initialization (bool): Whether to use CPU initialization for large models. Defaults to False.
+        operation (str): 操作タイプ - 'merge' または 'test'。
+        backend (str): モデルのバックエンドタイプ（'fsdp' または 'megatron'）。
+        target_dir (Optional[str]): マージされた HuggingFace モデルを保存するディレクトリ。デフォルトは "tmp"。
+        hf_upload_path (Optional[str]): モデルをアップロードする Hugging Face リポジトリ ID。デフォルトは None。
+        private (bool): モデルをプライベートな Hugging Face リポジトリにアップロードするかどうか。デフォルトは False。
+        test_hf_dir (Optional[str]): テスト用の参照 Hugging Face モデルディレクトリのパス。デフォルトは None。
+        tie_word_embedding (bool): 単語埋め込み重みを結合するかどうか（現在は Megatron のみサポート）。デフォルトは False。
+        trust_remote_code (bool): リモートコードを信頼するかどうか。デフォルトは False。
+        is_value_model (bool): モデルが価値モデルかどうか（現在は Megatron のみサポート）。デフォルトは False。
+        local_dir (Optional[str]): 保存されたモデルチェックポイントのパス。デフォルトは None。
+        hf_model_config_path (Optional[str]): HuggingFace モデル設定ファイルのパス。デフォルトは None。
+        hf_upload (bool): HuggingFace にアップロードするかどうか（自動計算）。初期化用ではありません。
+        use_cpu_initialization (bool): 大規模モデルに CPU 初期化を使用するかどうか。デフォルトは False。
     """
 
-    operation: str  # 'merge' or 'test'
+    operation: str  # 'merge' または 'test'
     backend: str
     target_dir: Optional[str] = "tmp"
     hf_upload_path: Optional[str] = None
@@ -149,7 +147,6 @@ def generate_config_from_args(args: argparse.Namespace) -> ModelMergerConfig:
         config = ModelMergerConfig(
             **common_config_args,
             test_hf_dir=args.test_hf_dir,
-            # the following args are not used by test operation
             target_dir=None,
             hf_upload_path=None,
             private=False,

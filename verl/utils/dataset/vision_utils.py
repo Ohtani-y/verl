@@ -31,8 +31,8 @@ def process_image(image: dict | Image.Image) -> Image.Image:
     return fetch_image(image)
 
 
-VIDEO_FORMAT_HELP = """Currently, we only support the video formats introduced in qwen2-vl.
-Refer to https://github.com/QwenLM/Qwen2.5-VL?tab=readme-ov-file#using---transformers-to-chat.
+VIDEO_FORMAT_HELP = """現在、qwen2-vl で導入されたビデオ形式のみをサポートしています。
+https://github.com/QwenLM/Qwen2.5-VL?tab=readme-ov-file#using---transformers-to-chat を参照してください。
 
 eg.
 {
@@ -47,7 +47,7 @@ eg.
     "type": "video",
     "video": "file:///path/to/video.mp4"
 }
-# Defaults to fps=2, min_frames=4, max_frames=768
+# デフォルト値: fps=2, min_frames=4, max_frames=768
 
 {
     "type": "video",
@@ -66,16 +66,15 @@ def process_video(
     fps_min_frames: Optional[int] = None,
     fps_max_frames: Optional[int] = None,
 ) -> torch.Tensor:
-    """Converts a video dict into a [n_frames, 3, H, W] tensor
+    """ビデオ辞書を [n_frames, 3, H, W] テンソルに変換します
 
-    Add video sample FPS in a future MR
+    将来のMRでビデオサンプルFPSを追加予定
     """
 
     if not isinstance(video, dict) or "video" not in video:
         raise NotImplementedError(VIDEO_FORMAT_HELP)
     assert nframes is None or fps is None, "Can't use both `nframes` or `fps`"
 
-    # Shallow copy... since we might want to add some keys
     video = dict(video)
 
     contains_sampling_rules = "nframes" in video or "fps" in video
@@ -93,8 +92,6 @@ def process_video(
 
 
 def process_multi_modal_inputs_for_minicpmo(input_ids, attention_mask, position_ids, cu_seqlens, multi_modal_inputs):
-    # Adjust image bounds based on left padding and cumulative sequence lengths
-    # This is necessary for MiniCPM-o's vision-language alignment
     left_padding_length = torch.argmax(attention_mask, dim=1)
     image_bounds = []
     for i in range(len(multi_modal_inputs["image_bound"])):
@@ -103,7 +100,6 @@ def process_multi_modal_inputs_for_minicpmo(input_ids, attention_mask, position_
         )
         image_bounds.append(image_bound)
 
-    # Flatten pixel values list for MiniCPM-o processing
     pixel_values = []
     for i in range(len(multi_modal_inputs["pixel_values"])):
         pixel_values.extend([p for p in multi_modal_inputs["pixel_values"][i]])

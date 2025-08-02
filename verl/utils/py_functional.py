@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contain small python utility functions
+小さなPythonユーティリティ関数を含む
 """
 
 import importlib
@@ -26,53 +26,48 @@ from types import SimpleNamespace
 from typing import Any, Callable, Iterator, Optional
 
 
-# --- Top-level helper for multiprocessing timeout ---
-# This function MUST be defined at the top level to be pickleable
 def _mp_target_wrapper(target_func: Callable, mp_queue: multiprocessing.Queue, args: tuple, kwargs: dict[str, Any]):
     """
-    Internal wrapper function executed in the child process.
-    Calls the original target function and puts the result or exception into the queue.
+    子プロセスで実行される内部ラッパー関数。
+    元のターゲット関数を呼び出し、結果または例外をキューに入れる。
     """
     try:
         result = target_func(*args, **kwargs)
-        mp_queue.put((True, result))  # Indicate success and put result
+        mp_queue.put((True, result))  # 成功を示し結果を入れる
     except Exception as e:
-        # Ensure the exception is pickleable for the queue
         try:
             import pickle
 
-            pickle.dumps(e)  # Test if the exception is pickleable
-            mp_queue.put((False, e))  # Indicate failure and put exception
+            pickle.dumps(e)  # 例外がpickle可能かテスト
+            mp_queue.put((False, e))  # 失敗を示し例外を入れる
         except (pickle.PicklingError, TypeError):
-            # Fallback if the original exception cannot be pickled
             mp_queue.put((False, RuntimeError(f"Original exception type {type(e).__name__} not pickleable: {e}")))
 
 
-# Renamed the function from timeout to timeout_limit
 def timeout_limit(seconds: float, use_signals: bool = False):
     """
-    Decorator to add a timeout to a function.
+    関数にタイムアウトを追加するデコレータ。
 
     Args:
-        seconds: The timeout duration in seconds.
-        use_signals: (Deprecated)  This is deprecated because signals only work reliably in the main thread
-                     and can cause issues in multiprocessing or multithreading contexts.
-                     Defaults to False, which uses the more robust multiprocessing approach.
+        seconds: タイムアウト時間（秒）。
+        use_signals: （非推奨）シグナルはメインスレッドでのみ確実に動作し、
+                     マルチプロセシングやマルチスレッドコンテキストで問題を引き起こす可能性があるため非推奨。
+                     デフォルトはFalseで、より堅牢なマルチプロセシングアプローチを使用。
 
     Returns:
-        A decorated function with timeout.
+        タイムアウト付きの装飾された関数。
 
     Raises:
-        TimeoutError: If the function execution exceeds the specified time.
-        RuntimeError: If the child process exits with an error (multiprocessing mode).
-        NotImplementedError: If the OS is not POSIX (signals are only supported on POSIX).
+        TimeoutError: 関数の実行が指定時間を超えた場合。
+        RuntimeError: 子プロセスがエラーで終了した場合（マルチプロセシングモード）。
+        NotImplementedError: OSがPOSIXでない場合（シグナルはPOSIXでのみサポート）。
     """
 
     def decorator(func):
         if use_signals:
             if os.name != "posix":
                 raise NotImplementedError(f"Unsupported OS: {os.name}")
-            # Issue deprecation warning if use_signals is explicitly True
+            # use_signalsが明示的にTrueの場合は非推奨警告を発行
             print(
                 "WARN: The 'use_signals=True' option in the timeout decorator is deprecated. \
                 Signals are unreliable outside the main thread. \

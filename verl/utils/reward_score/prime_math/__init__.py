@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Answer checker API that uses sympy to simplify expressions and check for equality.
+sympy を使用して式を簡略化し、等価性をチェックする回答チェッカー API。
 
-Call grade_answer(given_answer: str, ground_truth: str).
+grade_answer(given_answer: str, ground_truth: str) を呼び出してください。
 
 FROM: https://github.com/openai/prm800k/blob/main/prm800k/grading/grader.py
 """
@@ -35,14 +35,13 @@ from .grader import math_equal
 # import math_normalize
 # from grader import math_equal
 
-# sympy might hang -- we don't care about trying to be lenient in these cases
 BAD_SUBSTRINGS = ["^{", "^("]
 BAD_REGEXES = ["\^[0-9]+\^", "\^[0-9][0-9]+"]
 TUPLE_CHARS = "()[]"
 
 
 def _sympy_parse(expr: str):
-    """Parses an expression with sympy."""
+    """sympy で式を解析します。"""
     py_expr = expr.replace("^", "**")
     return sympy_parser.parse_expr(
         py_expr,
@@ -51,13 +50,12 @@ def _sympy_parse(expr: str):
 
 
 def _parse_latex(expr: str) -> str:
-    """Attempts to parse latex to an expression sympy can read."""
+    """latex を sympy が読める式に解析しようと試みます。"""
     expr = expr.replace("\\tfrac", "\\frac")
     expr = expr.replace("\\dfrac", "\\frac")
-    expr = expr.replace("\\frac", " \\frac")  # Play nice with mixed numbers.
+    expr = expr.replace("\\frac", " \\frac")  # 混合数とうまく連携する
     expr = latex2text.LatexNodes2Text().latex_to_text(expr)
 
-    # Replace the specific characters that this parser uses.
     expr = expr.replace("√", "sqrt")
     expr = expr.replace("π", "pi")
     expr = expr.replace("∞", "inf")
@@ -104,16 +102,15 @@ def _str_to_int(x: str) -> bool:
 
 def _inject_implicit_mixed_number(step: str):
     """
-    Automatically make a mixed number evalable
-    e.g. 7 3/4 => 7+3/4
+    混合数を自動的に評価可能にする
+    例: 7 3/4 => 7+3/4
     """
     p1 = re.compile("([0-9]) +([0-9])")
-    step = p1.sub("\\1+\\2", step)  ## implicit mults
+    step = p1.sub("\\1+\\2", step)  ## 暗黙の乗算
     return step
 
 
 def _strip_properly_formatted_commas(expr: str):
-    # We want to be careful because we don't want to strip tuple commas
     p1 = re.compile("(\d)(,)(\d\d\d)($|\D)")
     while True:
         next_expr = p1.sub("\\1\\3\\4", expr)
@@ -124,11 +121,10 @@ def _strip_properly_formatted_commas(expr: str):
 
 
 def _normalize(expr: str) -> str:
-    """Normalize answer expressions."""
+    """回答式を正規化します。"""
     if expr is None:
         return None
 
-    # Remove enclosing `\text{}`.
     m = re.search("^\\\\text\{(?P<text>.+?)\}$", expr)
     if m is not None:
         expr = m.group("text")
@@ -176,7 +172,6 @@ def _normalize(expr: str) -> str:
         with contextlib.suppress(Exception):
             expr = _parse_latex(expr)
 
-    # edge case with mixed numbers and negative signs
     expr = re.sub("- *", "-", expr)
 
     expr = _inject_implicit_mixed_number(expr)

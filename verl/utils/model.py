@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Utilities to create common models from huggingface
+Hugging Face から一般的なモデルを作成するためのユーティリティ
 """
 
 import os
@@ -52,10 +52,10 @@ def squeeze(x):
 
 
 def update_model_config(module_config, override_config_kwargs):
-    """Update the module config with the override_config_kwargs.
+    """override_config_kwargs でモジュール設定を更新します。
     Args:
-        module_config: The module config from Huggingface Transformers.
-        override_config_kwargs: The kwargs to override the module config.
+        module_config: Hugging Face Transformers からのモジュール設定。
+        override_config_kwargs: モジュール設定を上書きするための kwargs。
     """
     for key, val in override_config_kwargs.items():
         if isinstance(val, dict):
@@ -82,25 +82,27 @@ def get_generation_config(
 ) -> Optional[GenerationConfig]:
     try:
         return GenerationConfig.from_pretrained(model)
-    except OSError:  # Not found
+    except OSError:  # 見つからない
         try:
             config = get_huggingface_actor_config(
                 model,
                 trust_remote_code=trust_remote_code,
             )
             return GenerationConfig.from_model_config(config)
-        except OSError:  # Not found
+        except OSError:  # 見つからない
             return None
 
 
 def create_huggingface_actor(model_name: str, override_config_kwargs=None, automodel_kwargs=None) -> nn.Module:
-    """
+    """Hugging Face アクターモデルを作成します。
 
     Args:
-        model_name:
-        override_config_kwargs:
+        model_name: モデル名
+        override_config_kwargs: 設定を上書きするための kwargs
+        automodel_kwargs: AutoModel に渡すための kwargs
 
     Returns:
+        作成されたアクターモデル
 
     """
     if override_config_kwargs is None:
@@ -118,13 +120,15 @@ def create_huggingface_actor(model_name: str, override_config_kwargs=None, autom
 
 
 def create_huggingface_critic(model_name: str, override_config_kwargs=None, automodel_kwargs=None) -> nn.Module:
-    """
+    """Hugging Face クリティックモデルを作成します。
 
     Args:
-        model_name:
-        override_config_kwargs:
+        model_name: モデル名
+        override_config_kwargs: 設定を上書きするための kwargs
+        automodel_kwargs: AutoModel に渡すための kwargs
 
     Returns:
+        作成されたクリティックモデル
 
     """
     critic_module: nn.Module = create_huggingface_actor(
@@ -179,17 +183,18 @@ def create_random_mask(
     max_ratio_of_left_padding: float,
     min_ratio_of_valid_token: float = 0,
 ):
-    """Create a random mask given input_ids. Support left padding and right padding.
-    Process:
-    - Sample valid token length
-    - Sample left_padding length
-    - Generate padding
+    """input_ids に基づいてランダムマスクを作成します。左パディングと右パディングをサポートします。
+    処理:
+    - 有効トークン長をサンプリング
+    - 左パディング長をサンプリング
+    - パディングを生成
 
     Args:
         input_ids:
-            shape (batch_size, seq_len)
+            形状 (batch_size, seq_len)
 
     Returns:
+        作成されたマスク
 
     """
     assert max_ratio_of_valid_token > 0 and max_ratio_of_valid_token <= 1.0
@@ -203,7 +208,6 @@ def create_random_mask(
     assert max_num_valid_tokens + max_left_padding <= sequence_length
     assert max_num_valid_tokens > 0 and max_ratio_of_valid_token <= sequence_length
     masks = torch.ones_like(input_ids, dtype=torch.int64)
-    # TODO: we can make this faster
     for i in range(batch_size):
         num_left_padding = np.random.randint(low=0, high=max_left_padding + 1, dtype=np.int64)
         num_valid = np.random.randint(low=min_num_valid_tokens, high=max_num_valid_tokens + 1, dtype=np.int64)
@@ -221,7 +225,7 @@ def compute_position_id_with_mask(mask):
 
 
 def convert_weight_keys(state_dict: dict[str, torch.Tensor], model: PreTrainedModel):
-    # convert state dict keys: https://github.com/huggingface/transformers/pull/38385
+    # state dict キーを変換: https://github.com/huggingface/transformers/pull/38385
     if not hasattr(model, "_checkpoint_conversion_mapping"):
         return state_dict
 
@@ -229,10 +233,9 @@ def convert_weight_keys(state_dict: dict[str, torch.Tensor], model: PreTrainedMo
     original_weights = {}
     for key, value in state_dict.items():
         for pattern, replacement in reverse_key_mapping.items():
-            replacement = replacement.lstrip("^")  # strip off un-needed chars and patterns
+            replacement = replacement.lstrip("^")  # 不要な文字とパターンを除去
             replacement = re.sub(r"\(.*\)", "", replacement)
             key, n_replace = re.subn(pattern, replacement, key)
-            # Early exit of the loop
             if n_replace > 0:
                 break
 
@@ -243,15 +246,15 @@ def convert_weight_keys(state_dict: dict[str, torch.Tensor], model: PreTrainedMo
 
 def check_exclude_modules(config, key: str) -> bool:
     """
-    A helper method to check if the passed module's key name matches any of the exclude modules in the adapter_config.
-    Adapted from https://github.com/huggingface/peft/blob/main/src/peft/tuners/tuners_utils.py
+    渡されたモジュールのキー名が adapter_config の除外モジュールのいずれかと一致するかをチェックするヘルパーメソッド。
+    https://github.com/huggingface/peft/blob/main/src/peft/tuners/tuners_utils.py から適応
 
     Args:
-        config (`LoraConfig` | `LycorisConfig`): A config to match exclude modules from
-        key (`str`): A key to search any matches in config
+        config (`LoraConfig` | `LycorisConfig`): 除外モジュールをマッチングするための設定
+        key (`str`): 設定内でマッチを検索するキー
 
     Returns:
-        True of match object if key matches any exclude modules from config, False if no match found
+        キーが設定の除外モジュールのいずれかと一致する場合は True、マッチが見つからない場合は False
     """
     if hasattr(config, "exclude_modules") and config.exclude_modules:
         if isinstance(config.exclude_modules, str):
@@ -266,20 +269,19 @@ def check_exclude_modules(config, key: str) -> bool:
 
 def check_target_modules(config, key: str) -> bool:
     """
-    A helper method to check if the passed module's key name matches any of the target modules in the adapter_config.
-    Adapted from https://github.com/huggingface/peft/blob/main/src/peft/tuners/tuners_utils.py
+    渡されたモジュールのキー名が adapter_config のターゲットモジュールのいずれかと一致するかをチェックするヘルパーメソッド。
+    https://github.com/huggingface/peft/blob/main/src/peft/tuners/tuners_utils.py から適応
 
     Args:
-        config (`LoraConfig` | `LycorisConfig`): A config to match target modules from
-        key (`str`): A key to search any matches in config
+        config (`LoraConfig` | `LycorisConfig`): ターゲットモジュールをマッチングするための設定
+        key (`str`): 設定内でマッチを検索するキー
 
     Returns:
-        True of match object if key matches any target modules from config, False if no match found
+        キーが設定のターゲットモジュールのいずれかと一致する場合は True、マッチが見つからない場合は False
     """
     if isinstance(config.target_modules, str):
         target_module_found = re.fullmatch(config.target_modules, key)
     elif key in config.target_modules:
-        # this module is specified directly in target_modules
         target_module_found = True
     else:
         target_module_found = any(key.endswith(f".{target_key}") for target_key in config.target_modules)

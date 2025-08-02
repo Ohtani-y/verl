@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Metrics utils.
+メトリクスユーティリティ。
 """
 
 from typing import Any
@@ -22,17 +22,17 @@ import numpy as np
 
 def reduce_metrics(metrics: dict[str, list[Any]]) -> dict[str, Any]:
     """
-    Reduces a dictionary of metric lists by computing the mean, max, or min of each list.
-    The reduce operation is determined by the key name:
-    - If the key contains "max", np.max is used
-    - If the key contains "min", np.min is used
-    - Otherwise, np.mean is used
+    メトリクスリストの辞書を平均、最大、または最小値を計算して削減します。
+    削減操作はキー名によって決定されます：
+    - キーに "max" が含まれる場合、np.max が使用されます
+    - キーに "min" が含まれる場合、np.min が使用されます
+    - それ以外の場合、np.mean が使用されます
 
     Args:
-        metrics: A dictionary mapping metric names to lists of metric values.
+        metrics: メトリクス名をメトリクス値のリストにマッピングする辞書。
 
     Returns:
-        A dictionary with the same keys but with each list replaced by its reduced value.
+        同じキーを持つが、各リストが削減された値に置き換えられた辞書。
 
     Example:
         >>> metrics = {

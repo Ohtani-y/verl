@@ -21,7 +21,7 @@ from verl import DataProto
 
 
 class AbstractSampler(Sampler[int]):
-    """Abstract interface for custom samplers."""
+    """カスタムサンプラーの抽象インターフェース。"""
 
     @abstractmethod
     def __init__(
@@ -33,7 +33,7 @@ class AbstractSampler(Sampler[int]):
 
 
 class AbstractCurriculumSampler(AbstractSampler):
-    """Experimental interface for curriculum learning samplers."""
+    """カリキュラム学習サンプラーの実験的インターフェース。"""
 
     @abstractmethod
     def update(self, batch: DataProto) -> None:

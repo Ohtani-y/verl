@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Implement a multiprocess PPOCritic
+マルチプロセス PPOCritic の実装
 """
 
 import itertools
@@ -57,14 +57,13 @@ class MegatronPPOCritic(BasePPOCritic):
         super().__init__(config=config)
         self._validate_config(config)
         self.model_config = model_config
-        self.hf_config = hf_config  # huggingface config
-        self.tf_config = tf_config  # mcore transformer config
+        self.hf_config = hf_config  # huggingface 設定
+        self.tf_config = tf_config  # mcore transformer 設定
 
         self.critic_module = critic_module
         self.critic_optimizer = critic_optimizer
         self.critic_optimizer_config = critic_optimizer_config
 
-        # we create a separate nametuple for optimizer step so that global args won't affect it.
         self.optimizer_step_args = OmegaConf.create(
             {
                 "skip_grad": None,
@@ -80,7 +79,7 @@ class MegatronPPOCritic(BasePPOCritic):
         )
 
     def _validate_config(self, config) -> None:
-        """Validate config options not implemented for Megatron backend"""
+        """Megatron バックエンドで実装されていない設定オプションを検証"""
         assert config.get("ulysses_sequence_parallel_size", 1) == 1
         if config.shuffle:
             assert config.data_loader_seed is not None, "If shuffle dataloader, seed must be manually set"
@@ -109,7 +108,6 @@ class MegatronPPOCritic(BasePPOCritic):
                 mini_batch_size=None,
             )
             if mpu.is_pipeline_last_stage(ignore_virtual=True):
-                # only on last rank. It should be on every tp rank
                 values = [o["vpreds"] for o in output["output"]]  # (bs, seq_size, vocal_size)
                 values = torch.cat(values, dim=0).to(torch.float32)
                 if use_dynamic_bsz:
@@ -121,22 +119,19 @@ class MegatronPPOCritic(BasePPOCritic):
             else:
                 values = torch.empty_like(attention_mask, dtype=torch.float32)
 
-            # each tp ranks should contain the same value
             values = values[
                 :, -response_length - 1 : -1
-            ]  # Values are predicted at the ends of prefixes, e.g., the last prompt token
+            ]  # 値はプレフィックスの終端で予測される（例：最後のプロンプトトークン）
             response_mask = attention_mask[:, -response_length:]
-            values = values * response_mask  # Only action tokens have values
+            values = values * response_mask  # アクショントークンのみが値を持つ
             values = values.contiguous()
 
-            # sync among pp ranks
             torch.distributed.broadcast(
                 tensor=values,
                 src=mpu.get_pipeline_model_parallel_last_rank(),
                 group=mpu.get_pipeline_model_parallel_group(),
             )
 
-        # add empty cache after each compute
         get_torch_device().empty_cache()
 
         return values
@@ -160,7 +155,6 @@ class MegatronPPOCritic(BasePPOCritic):
         max_token_len=None,
         mini_batch_size=None,
     ):
-        # broadcast from last pp rank to all other pp ranks
         mini_batch = data
         mini_batch.to(get_device_id())
         mini_batch.batch = mini_batch.batch.contiguous()
@@ -169,7 +163,6 @@ class MegatronPPOCritic(BasePPOCritic):
             src=mpu.get_pipeline_model_parallel_last_rank(),
             group=mpu.get_pipeline_model_parallel_group(),
         )
-        # split into micro-batches
         mini_batch.batch["attention_mask"] = mini_batch.batch["attention_mask"].to(bool)
 
         indices = None
@@ -268,8 +261,8 @@ class MegatronPPOCritic(BasePPOCritic):
                 data_iterator=batch_generator,
                 model=self.critic_module,
                 num_microbatches=n_micro_batch,
-                seq_length=total_seqlen,  # no use when input_shapes was set
-                micro_batch_size=1,  # no use when input_shapes was set
+                seq_length=total_seqlen,  # input_shapes が設定されている場合は使用されない
+                micro_batch_size=1,  # input_shapes が設定されている場合は使用されない
                 forward_only=forward_only,
             )
         else:
@@ -278,11 +271,11 @@ class MegatronPPOCritic(BasePPOCritic):
                 data_iterator=batch_generator,
                 model=self.critic_module,
                 num_microbatches=n_micro_batch,
-                seq_length=total_seqlen,  # in use for pp = 1
-                micro_batch_size=1,  # in use for pp = 1
+                seq_length=total_seqlen,  # pp = 1 の場合に使用
+                micro_batch_size=1,  # pp = 1 の場合に使用
                 forward_only=forward_only,
             )
-        # loss_reduces contains the stats returned from loss_func
+        # loss_reduces には loss_func から返された統計が含まれる
         losses_reduced = {"output": losses_reduced}
         if use_dynamic_bsz:
             losses_reduced["indices"] = indices
@@ -295,7 +288,6 @@ class MegatronPPOCritic(BasePPOCritic):
         for data in dataloader:
             # data = data.batch.to(self.critic_module.device)
             self.critic_optimizer.zero_grad()
-            # use use_contiguous_buffers_in_local_ddp and no overlap_dp_param_comm
             for chunk in self.critic_module:
                 chunk.zero_grad_buffer()
 
@@ -318,14 +310,12 @@ class MegatronPPOCritic(BasePPOCritic):
             append_to_dict(metrics, data)
 
             if update_successful:
-                # allgather already execute in optimizer.step in new megatron
                 pass
             else:
                 raise NotImplementedError
 
             for metric in metric_micro_batch:
-                append_to_dict(metrics, metric)  # append the metric from this micro-batch to global metrics.
+                append_to_dict(metrics, metric)  # このマイクロバッチのメトリクスをグローバルメトリクスに追加
 
-        # add empty cache after each compute
         get_torch_device().empty_cache()
         return metrics

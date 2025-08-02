@@ -32,9 +32,8 @@ def broadcast_pyobj(
 ):
     """from https://github.com/sgl-project/sglang/blob/844e2f227ab0cce6ef818a719170ce37b9eb1e1b/python/sglang/srt/utils.py#L905
 
-    Broadcast inputs from src rank to all other ranks with torch.dist backend.
-    The `rank` here refer to the source rank on global process group (regardless
-    of dist_group argument).
+    torch.dist バックエンドを使用してソースランクから他の全ランクに入力をブロードキャストします。
+    ここでの `rank` は（dist_group 引数に関係なく）グローバルプロセスグループでのソースランクを指します。
     """
     device = torch.device(get_device_name() if not force_cpu_device else "cpu")
 
@@ -72,14 +71,14 @@ def get_named_tensor_buckets(
     iterable: Iterator[tuple[str, torch.Tensor]], bucket_bytes: int
 ) -> Iterator[list[tuple[str, torch.Tensor]]]:
     """
-    Group tensors into buckets based on a specified size in megabytes.
+    指定されたバイト数に基づいてテンソルをバケットにグループ化します。
 
     Args:
-        iterable: An iterator of tuples containing tensor names and tensors.
-        bucket_bytes: The maximum size of each bucket in bytes.
+        iterable: テンソル名とテンソルを含むタプルのイテレータ。
+        bucket_bytes: 各バケットの最大サイズ（バイト単位）。
 
     Yields:
-        Lists of tuples, where each tuple contains a tensor name and its corresponding tensor.
+        タプルのリスト。各タプルはテンソル名とそれに対応するテンソルを含みます。
 
     Example:
         >>> tensors = [('tensor1', torch.randn(1000, 1000)), ('tensor2', torch.randn(2000, 2000))]

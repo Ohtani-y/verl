@@ -25,7 +25,7 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 @register("single_turn_agent")
 class SingleTurnAgentLoop(AgentLoopBase):
-    """Naive agent loop that only do single turn chat completion."""
+    """単一ターンのチャット補完のみを行うシンプルなエージェントループ。"""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

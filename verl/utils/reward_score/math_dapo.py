@@ -18,13 +18,13 @@ from typing import Optional
 
 
 def last_boxed_only_string(string: str) -> Optional[str]:
-    """Extract the last LaTeX boxed expression from a string.
+    """文字列から最後のLaTeX boxed表現を抽出します。
 
     Args:
-        string: Input string containing LaTeX code
+        string: LaTeXコードを含む入力文字列
 
     Returns:
-        The last boxed expression or None if not found
+        最後のboxed表現、見つからない場合はNone
     """
     idx = string.rfind("\\boxed{")
     if idx < 0:
@@ -48,13 +48,13 @@ def last_boxed_only_string(string: str) -> Optional[str]:
 
 
 def remove_boxed(s: str) -> str:
-    """Remove the LaTeX boxed command from a string.
+    """文字列からLaTeX boxedコマンドを除去します。
 
     Args:
-        s: String with format "\\boxed{content}"
+        s: "\\boxed{content}"形式の文字列
 
     Returns:
-        The content inside the boxed command
+        boxedコマンド内のコンテンツ
     """
     left = "\\boxed{"
     assert s[: len(left)] == left, f"box error: {s}"
@@ -62,7 +62,6 @@ def remove_boxed(s: str) -> str:
     return s[len(left) : -1]
 
 
-# Constants for normalization
 SUBSTITUTIONS = [
     ("an ", ""),
     ("a ", ""),
@@ -122,30 +121,27 @@ REMOVED_EXPRESSIONS = [
 
 
 def normalize_final_answer(final_answer: str) -> str:
-    """Normalize a final answer to a quantitative reasoning question.
+    """定量的推論問題の最終回答を正規化します。
 
     Args:
-        final_answer: The answer string to normalize
+        final_answer: 正規化する回答文字列
 
     Returns:
-        Normalized answer string
+        正規化された回答文字列
     """
     final_answer = final_answer.split("=")[-1]
 
-    # Apply substitutions and removals
     for before, after in SUBSTITUTIONS:
         final_answer = final_answer.replace(before, after)
     for expr in REMOVED_EXPRESSIONS:
         final_answer = final_answer.replace(expr, "")
 
-    # Extract and normalize LaTeX math
     final_answer = re.sub(r"(.*?)(\$)(.*?)(\$)(.*)", "$\\3$", final_answer)
     final_answer = re.sub(r"(\\text\{)(.*?)(\})", "\\2", final_answer)
     final_answer = re.sub(r"(\\textbf\{)(.*?)(\})", "\\2", final_answer)
     final_answer = re.sub(r"(\\overline\{)(.*?)(\})", "\\2", final_answer)
     final_answer = re.sub(r"(\\boxed\{)(.*)(\})", "\\2", final_answer)
 
-    # Normalize shorthand TeX:
     #  \fracab -> \frac{a}{b}
     #  \frac{abc}{bef} -> \frac{abc}{bef}
     #  \fracabc -> \frac{a}{b}c
@@ -155,7 +151,6 @@ def normalize_final_answer(final_answer: str) -> str:
     final_answer = re.sub(r"(sqrt)([^{])", "sqrt{\\2}", final_answer)
     final_answer = final_answer.replace("$", "")
 
-    # Normalize numbers
     if final_answer.replace(",", "").isdigit():
         final_answer = final_answer.replace(",", "")
 

@@ -22,7 +22,6 @@ import torch
 from torch.distributed._tensor import Placement, Shard
 
 try:
-    # for torch 2.5+
     from torch.distributed.tensor import DTensor
 except ImportError:
     from torch.distributed._tensor import DTensor
@@ -34,25 +33,25 @@ from .base_model_merger import BaseModelMerger
 
 class FSDPModelMerger(BaseModelMerger):
     """
-    Model merger for FSDP (Fully Sharded Data Parallel) checkpoints.
+    FSDP (Fully Sharded Data Parallel) チェックポイント用のモデルマージャー。
 
-    This class handles the conversion of FSDP distributed checkpoints into HuggingFace format.
-    FSDP shards model parameters across multiple processes, and this merger reconstructs
-    the full model by loading and concatenating the sharded parameters from all ranks.
+    このクラスは FSDP 分散チェックポイントを HuggingFace 形式に変換する処理を行います。
+    FSDP は複数のプロセス間でモデルパラメータを分割し、このマージャーは
+    全ランクからの分割されたパラメータを読み込んで連結することで完全なモデルを再構築します。
 
-    The merger supports various FSDP configurations including:
-    - Pure FSDP (single dimension sharding)
-    - FSDP + DDP (data parallel + fully sharded data parallel)
-    - DTensor-based sharding with custom device meshes
+    マージャーは以下の様々な FSDP 構成をサポートします：
+    - Pure FSDP（単一次元分割）
+    - FSDP + DDP（データ並列 + 完全分割データ並列）
+    - カスタムデバイスメッシュを使用した DTensor ベース分割
 
-    Key features:
-    - Automatic detection of world size from checkpoint filenames
-    - Support for DTensor and non-DTensor checkpoints
-    - Parallel loading of checkpoint shards for efficiency
-    - Validation against reference HuggingFace models
+    主な機能：
+    - チェックポイントファイル名からの world size の自動検出
+    - DTensor および非 DTensor チェックポイントのサポート
+    - 効率性のためのチェックポイント分割の並列読み込み
+    - 参照 HuggingFace モデルに対する検証
 
-    Example:
-        To merge FSDP checkpoints:
+    例：
+        FSDP チェックポイントをマージするには：
         ```python
         config = ModelMergerConfig(
             operation="merge",
@@ -66,8 +65,8 @@ class FSDPModelMerger(BaseModelMerger):
     """
 
     def _get_world_size(self) -> int:
-        """_summary_
-        From FSDP json config file, extract the world size.
+        """
+        FSDP json 設定ファイルから world size を抽出します。
 
         Returns:
             int: world size
@@ -79,7 +78,6 @@ class FSDPModelMerger(BaseModelMerger):
         with open(config_path) as f:
             config = json.load(f)
 
-        # Extract world size from the config
         world_size = config.get("world_size", None)
         if world_size is None:
             raise ValueError("World size not found in the config file.")
@@ -95,8 +93,8 @@ class FSDPModelMerger(BaseModelMerger):
 
     def _extract_device_mesh_info(self, state_dict: dict, world_size: int) -> tuple[np.ndarray, tuple[str, ...]]:
         """
-        Retrieves sharding information (device_mesh, mesh_dim_names) from a DTensor in the state_dict.
-        If no DTensor is found, infers a simple FSDP mesh based on world_size.
+        state_dict 内の DTensor から分割情報（device_mesh、mesh_dim_names）を取得します。
+        DTensor が見つからない場合は、world_size に基づいて単純な FSDP メッシュを推論します。
         """
         pivot_key = sorted(list(state_dict.keys()))[0]
         weight = state_dict[pivot_key]

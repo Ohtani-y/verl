@@ -1,7 +1,6 @@
-# megatron ref config, inheriting from trainer/config/ref/ref.yaml
+# megatron ref 設定、trainer/config/ref/ref.yaml から継承
 defaults:
   - ref
-  # load the reference default config, then apply the fields in the current yaml
   - _self_
 
 strategy: megatron
@@ -13,7 +12,7 @@ megatron:
   expert_model_parallel_size: 1
   expert_tensor_parallel_size: None
   pipeline_model_parallel_size: 1
-  virtual_pipeline_model_parallel_size: null # change VPP interface for parallelism tests
+  virtual_pipeline_model_parallel_size: null # 並列化テスト用のVPPインターフェース変更
   context_parallel_size: 1
   sequence_parallel: True
   use_distributed_optimizer: False

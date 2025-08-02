@@ -48,19 +48,19 @@ class LinearCrossEntropy(torch.autograd.Function):
         reduction: typing.Optional[str] = "none",
         dist_process_group: typing.Optional[dist.ProcessGroup] = None,
     ) -> list[torch.Tensor]:
-        """_summary_
+        """線形クロスエントロピーの前方計算
 
         Args:
-            ctx (_type_): _description_
-            hidden (torch.Tensor): (batch_size, num_tokens, hidden_size) -> (batch_size * num_tokens, hidden_size)
-            weight (torch.Tensor): (vocab_size, hidden_size)
-            labels (torch.Tensor): (batch_size, num_tokens) -> (batch_size * num_tokens, )
-            temperature (typing.Optional[float], optional): _description_. Defaults to 1.0.
-            reduction (typing.Optional[str], optional): _description_. Defaults to "none".
-            dist_process_group (typing.Optional[dist.ProcessGroup], optional): _description_. Defaults to None.
+            ctx: PyTorch autograd コンテキスト
+            hidden (torch.Tensor): 隠れ状態テンソル (batch_size, num_tokens, hidden_size) -> (batch_size * num_tokens, hidden_size)
+            weight (torch.Tensor): 重みテンソル (vocab_size, hidden_size)
+            labels (torch.Tensor): ラベルテンソル (batch_size, num_tokens) -> (batch_size * num_tokens, )
+            temperature (typing.Optional[float], optional): 温度パラメータ. デフォルト: 1.0.
+            reduction (typing.Optional[str], optional): 削減方法. デフォルト: "none".
+            dist_process_group (typing.Optional[dist.ProcessGroup], optional): 分散プロセスグループ. デフォルト: None.
 
         Returns:
-            typing.List[torch.Tensor]: _description_
+            typing.List[torch.Tensor]: ログ確率とエントロピーのリスト
         """
 
         assert isinstance(temperature, float), f"temperature must be a float, but got {type(temperature)}"
@@ -70,7 +70,7 @@ class LinearCrossEntropy(torch.autograd.Function):
 
             original_hidden_shape = hidden.shape
             if len(hidden.shape) != 2:
-                hidden = hidden.view(-1, hidden.shape[-1])  # (batch_size * num_tokens, hidden_size)
+                hidden = hidden.view(-1, hidden.shape[-1])  # (batch_size * num_tokens, hidden_size) に変形
             if len(labels.shape) != 1:
                 labels = labels.view(-1)
 

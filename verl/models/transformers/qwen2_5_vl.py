@@ -50,7 +50,7 @@ def forward_base_model_old_api(
     second_per_grid_ts: Optional[torch.Tensor] = None,
 ) -> tuple | Qwen2_5_VLCausalLMOutputWithPast:
     r"""
-    Copy paste Qwen2_5_VL's forward
+    Qwen2_5_VL の forward をコピー&ペースト
     https://github.com/linkedin/Liger-Kernel/blob/main/src/liger_kernel/transformers/model/qwen2_5_vl.py
     ```"""
     output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
@@ -102,9 +102,7 @@ def forward_base_model_old_api(
         if attention_mask is not None:
             attention_mask = attention_mask.to(inputs_embeds.device)
 
-    # if we get 4D attention mask we cannot calculate rope deltas anymore. TODO @raushan fixme
     if position_ids is None and (attention_mask is None or attention_mask.ndim == 2):
-        # calculate RoPE index once per generation in the pre-fill stage only
         if (cache_position is not None and cache_position[0] == 0) or self.rope_deltas is None:
             position_ids, rope_deltas = self.get_rope_index(
                 input_ids,
@@ -114,13 +112,12 @@ def forward_base_model_old_api(
                 attention_mask,
             )
             self.rope_deltas = rope_deltas
-        # then use the prev pre-calculated rope-deltas to get the correct position ids
         else:
             batch_size, seq_length, _ = inputs_embeds.shape
             delta = (cache_position[0] + self.rope_deltas).to(inputs_embeds.device) if cache_position is not None else 0
             position_ids = torch.arange(seq_length, device=inputs_embeds.device)
             position_ids = position_ids.view(1, -1).expand(batch_size, -1)
-            if cache_position is not None:  # otherwise `deltas` is an int `0`
+            if cache_position is not None:  # そうでなければ `deltas` は int の `0`
                 delta = delta.repeat_interleave(batch_size // delta.shape[0], dim=0)
             position_ids = position_ids.add(delta)
             position_ids = position_ids.unsqueeze(0).expand(3, -1, -1)
@@ -161,7 +158,7 @@ def forward_base_model_new_api(
     second_per_grid_ts: Optional[torch.Tensor] = None,
 ) -> tuple | Qwen2_5_VLCausalLMOutputWithPast:
     r"""
-    Copy paste Qwen2_5_VL's forward
+    Qwen2_5_VL の forward をコピー&ペースト
     https://github.com/huggingface/transformers/blob/v4.52.3/src/transformers/models/qwen2_5_vl/modeling_qwen2_5_vl.py#L1384
     """
     output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions

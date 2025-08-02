@@ -25,12 +25,12 @@ class MemoryBuffer:
         self.data = torch.zeros(self.numel_padded, dtype=self.dtype, device=get_device_id(), requires_grad=False)
 
     def zero(self):
-        """Reset the buffer to zero."""
+        """バッファをゼロにリセットします。"""
         self.data.zero_()
 
     def get(self, shape, start_index):
-        """Return a tensor with the input `shape` as a view into the
-        1-D data starting at `start_index`."""
+        """指定された `shape` を持つテンソルを、`start_index` から始まる
+        1次元データのビューとして返します。"""
         end_index = start_index + shape.numel()
         assert end_index <= self.numel, "requested tensor is out of the buffer range."
         buffer_tensor = self.data[start_index:end_index]

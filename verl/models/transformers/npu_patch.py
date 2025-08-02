@@ -22,8 +22,6 @@ from transformers.models.qwen2_5_vl import modeling_qwen2_5_vl
 from transformers.models.qwen2_5_vl.modeling_qwen2_5_vl import Qwen2RMSNorm
 
 
-# This patch takes effect when using apply_rotary_pos_emb_flashatt on qwen2_5_vl and will be removed in
-# subsequent versions
 # https://github.com/huggingface/transformers/pull/38491
 def apply_rotary_pos_emb_flashatt_npu(
     q: torch.Tensor, k: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor
@@ -41,7 +39,6 @@ def apply_rotary_pos_emb_flashatt_npu(
     return q_embed, k_embed
 
 
-# This api can improve performance on ASCEND NPU
 def rms_norm_forward(self, x):
     return torch_npu.npu_rms_norm(x, self.weight, epsilon=self.variance_epsilon)[0]
 

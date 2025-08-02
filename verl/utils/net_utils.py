@@ -29,13 +29,13 @@ import ipaddress
 
 def is_ipv4(ip_str: str) -> bool:
     """
-    Check if the given string is an IPv4 address
+    指定された文字列が IPv4 アドレスかどうかをチェックする
 
     Args:
-        ip_str: The IP address string to check
+        ip_str: チェックする IP アドレス文字列
 
     Returns:
-        bool: Returns True if it's an IPv4 address, False otherwise
+        bool: IPv4 アドレスの場合は True、そうでなければ False を返す
     """
     try:
         ipaddress.IPv4Address(ip_str)
@@ -46,13 +46,13 @@ def is_ipv4(ip_str: str) -> bool:
 
 def is_ipv6(ip_str: str) -> bool:
     """
-    Check if the given string is an IPv6 address
+    指定された文字列が IPv6 アドレスかどうかをチェックする
 
     Args:
-        ip_str: The IP address string to check
+        ip_str: チェックする IP アドレス文字列
 
     Returns:
-        bool: Returns True if it's an IPv6 address, False otherwise
+        bool: IPv6 アドレスの場合は True、そうでなければ False を返す
     """
     try:
         ipaddress.IPv6Address(ip_str)

@@ -23,24 +23,23 @@ from .config import ProfilerConfig
 
 
 class Profiler:
-    """A PyTorch profiler wrapper class for collecting performance metrics.
+    """パフォーマンスメトリクス収集のための PyTorch プロファイラーラッパークラス。
 
-    TODO(haibin.lin): this should implement the DistProfiler interface, and the config should be unified.
+    TODO(haibin.lin): これは DistProfiler インターフェースを実装し、設定を統一する必要があります。
 
-    This profiler provides a convenient interface for profiling PyTorch operations,
-    with support for:
+    このプロファイラーは PyTorch 操作のプロファイリングのための便利なインターフェースを提供し、
+    以下をサポートします：
 
-    - CPU and CUDA activity profiling
-    - Configurable profiling schedule (wait/warmup/active steps)
-    - Multi-rank profiling support
-    - Chrome trace export
+    - CPU と CUDA アクティビティプロファイリング
+    - 設定可能なプロファイリングスケジュール（wait/warmup/active ステップ）
+    - マルチランクプロファイリングサポート
+    - Chrome トレースエクスポート
 
     Args:
-        config: Configuration object containing profiling parameters
+        config: プロファイリングパラメータを含む設定オブジェクト
     """
 
     def __init__(self, config):
-        # note : if we do not set use_profile, it will be set as None, so that all function will be skip
         if not isinstance(config, DictConfig):
             config = OmegaConf.create(config)
         self.config = config
@@ -48,7 +47,6 @@ class Profiler:
         self.saved = False
         self.prof = None
         self.rank = torch.distributed.get_rank()
-        # we need to validate the config before using the profiler
         self._validate()
         if config.use_profile and self.rank in self.config.profile_ranks:
             print(f"[Profiler] Profiler init for rank {self.rank}")
@@ -123,22 +121,22 @@ def mark_start_range(
     domain: Optional[str] = None,
     category: Optional[str] = None,
 ) -> None:
-    """Start a profiling range marker (no-op implementation).
+    """プロファイリング範囲マーカーを開始します（no-op 実装）。
 
     Args:
-        message (Optional[str]): Message to associate with the range marker.
-        color (Optional[str]): Color for the marker visualization.
-        domain (Optional[str]): Domain for the marker.
-        category (Optional[str]): Category for the marker.
+        message (Optional[str]): 範囲マーカーに関連付けるメッセージ。
+        color (Optional[str]): マーカー可視化の色。
+        domain (Optional[str]): マーカーのドメイン。
+        category (Optional[str]): マーカーのカテゴリ。
     """
     pass
 
 
 def mark_end_range(range_id: str) -> None:
-    """End a profiling range marker (no-op implementation).
+    """プロファイリング範囲マーカーを終了します（no-op 実装）。
 
     Args:
-        range_id (str): Identifier of the range to end.
+        range_id (str): 終了する範囲の識別子。
     """
     pass
 

@@ -61,7 +61,6 @@ class FSDPSGLangShardingManager(BaseShardingManager):
         self.offload_param = offload_param
         self.multi_stage_wake_up = multi_stage_wake_up
 
-        # Full params
         self.full_params = full_params
         if full_params and fsdp_version(self.module) == 1:
             FSDP.set_state_dict_type(
@@ -77,12 +76,10 @@ class FSDPSGLangShardingManager(BaseShardingManager):
         self.tp_size = self.device_mesh["infer_tp"].size()
         self.tp_rank = self.device_mesh["infer_tp"].get_local_rank()
 
-        # Note that torch_random_states may be different on each dp rank
         self.torch_random_states = get_torch_device().get_rng_state()
-        # get a random rng states
         if self.device_mesh is not None:
             gen_dp_rank = self.device_mesh["dp"].get_local_rank()
-            get_torch_device().manual_seed(gen_dp_rank + 1000)  # make sure all tp ranks have the same random states
+            get_torch_device().manual_seed(gen_dp_rank + 1000)  # 全ての tp ランクが同じランダム状態を持つことを保証
             self.gen_random_states = get_torch_device().get_rng_state()
             get_torch_device().set_rng_state(self.torch_random_states)
         else:
@@ -139,15 +136,13 @@ class FSDPSGLangShardingManager(BaseShardingManager):
             load_fsdp_model_to_gpu(self.module)
         params = self.module.state_dict()
         log_gpu_memory_usage("After state_dict() in sharding manager memory", logger=logger)
-        device = get_device_id()  # used when fsdp2 set cpu_offload_policy
+        device = get_device_id()  # fsdp2 で cpu_offload_policy を設定する際に使用
         params = {
             k: v.to(device, non_blocking=True) if fsdp_version(self.module) == 2 else v for k, v in params.items()
         }
 
-        # convert weight keys to match the model config
         params = convert_weight_keys(params, getattr(self.module, "_fsdp_wrapped_module", self.module))
 
-        # Copy, not share memory
         await self.update_weights(params)
         log_gpu_memory_usage("After sync model weights in sharding manager", logger=logger)
 
@@ -165,7 +160,6 @@ class FSDPSGLangShardingManager(BaseShardingManager):
             await self.inference_engine.resume_memory_occupation(tags=["kv_cache"])
             log_gpu_memory_usage("After resume SGLang kv_cache in sharding manager", logger=logger)
 
-        # important: need to manually set the random states of each tp to be identical.
         if self.device_mesh is not None:
             self.torch_random_states = get_torch_device().get_rng_state()
             get_torch_device().set_rng_state(self.gen_random_states)
@@ -179,27 +173,24 @@ class FSDPSGLangShardingManager(BaseShardingManager):
 
         self.module.train()
 
-        # add empty cache after each compute
         get_torch_device().empty_cache()
 
-        # restore random states
         if self.device_mesh is not None:
             self.gen_random_states = get_torch_device().get_rng_state()
             get_torch_device().set_rng_state(self.torch_random_states)
 
     def preprocess_data(self, data: DataProto) -> DataProto:
-        """All gather across tp group to make each rank has identical input."""
+        """各ランクが同一の入力を持つように tp グループ全体で all gather を実行"""
         if self.tp_size == 1:
             return data
 
-        # TODO: Current impl doesn't consider FSDP with torch micro-dp
         group = self.device_mesh["infer_tp"].get_group()
 
         all_gather_data_proto(data=data, process_group=group)
         return data
 
     def postprocess_data(self, data: DataProto) -> DataProto:
-        """Get chunk data of this tp rank since we do all gather in preprocess."""
+        """前処理で all gather を実行したため、この tp ランクのチャンクデータを取得"""
         if self.tp_size == 1:
             return data
 

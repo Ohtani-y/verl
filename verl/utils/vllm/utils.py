@@ -33,12 +33,12 @@ class VLLMHijack:
     def hijack():
         def hijack__load_adapter(self, lora_request: TensorLoRARequest) -> LoRAModel:
             """
-            based on vllm.lora.worker_manager.WorkerLoRAManager._load_adapter, support load adapter with lora tensors
+            vllm.lora.worker_manager.WorkerLoRAManager._load_adapter をベースに、LoRA テンソルでのアダプター読み込みをサポート
 
-            Reason:
-            VLLM does not support adding LoRA from tensors directly. It only supports adding LoRA via file paths.
-            To synchronize the LoRA tensors of the actor model, we need to find a workaround to enable VLLM to
-            load memory-based LoRA tensors.
+            理由:
+            VLLM は直接テンソルから LoRA を追加することをサポートしていません。ファイルパス経由での LoRA 追加のみサポートしています。
+            アクターモデルの LoRA テンソルを同期するため、VLLM がメモリベースの LoRA テンソルを
+            読み込めるようにする回避策が必要です。
             """
             try:
                 supported_lora_modules = self._adapter_manager.supported_lora_modules
@@ -64,12 +64,8 @@ class VLLMHijack:
 
                     peft_helper = PEFTHelper.from_local_dir(lora_path, self.max_position_embeddings)
 
-                # Validates the LoRA configuration against requirements before
-                # loading weights, throwing an exception if validation fails.
                 peft_helper.validate_legal(self.lora_config)
 
-                # For some models like Qwen2VL, we need to use hf_to_vllm_mapper
-                # to ensure correct loading of lora weights.
                 model = self._adapter_manager.model
                 hf_to_vllm_mapper = None
                 if hasattr(model, "hf_to_vllm_mapper") and model.hf_to_vllm_mapper is not None:
@@ -118,5 +114,5 @@ class VLLMHijack:
 
 
 def is_version_ge(pkg: str = "vllm", minver: str = "0.7.3"):
-    """check if the package version is greater than or equal to the minimum version"""
+    """パッケージのバージョンが最小バージョン以上かどうかをチェック"""
     return vs.parse(get_version(pkg)) >= vs.parse(minver)

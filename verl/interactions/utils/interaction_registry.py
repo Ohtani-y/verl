@@ -25,7 +25,7 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 
 def get_interaction_class(cls_name):
-    """Dynamically import and return the interaction class."""
+    """動的にインポートしてinteractionクラスを返す。"""
     module_name, class_name = cls_name.rsplit(".", 1)
     if module_name not in sys.modules:
         spec = importlib.util.find_spec(module_name)
@@ -40,13 +40,13 @@ def get_interaction_class(cls_name):
 
 
 def initialize_interactions_from_config(interaction_config_file):
-    """Initialize interactions from configuration file.
+    """設定ファイルからinteractionを初期化する。
 
     Args:
-        interaction_config_file: Path to the interaction configuration file.
+        interaction_config_file: interaction設定ファイルのパス。
 
     Returns:
-        dict: A dictionary mapping interaction names to BaseInteraction instances.
+        dict: interaction名からBaseInteractionインスタンスへのマッピング辞書。
     """
     interaction_config = OmegaConf.load(interaction_config_file)
     interaction_map = {}
@@ -55,28 +55,23 @@ def initialize_interactions_from_config(interaction_config_file):
         cls_name = interaction_item.class_name
         interaction_cls = get_interaction_class(cls_name)
 
-        # Extract config and name
         config = OmegaConf.to_container(interaction_item.config, resolve=True)
 
-        # Get the interaction name - either from config or derive from class name
+        # interaction名を取得 - 設定から取得するかクラス名から導出
         name = interaction_item.get("name", None)
         if name is None:
-            # If no name is specified, use the class name as default
             class_simple_name = cls_name.split(".")[-1]
-            # Remove "Interaction" suffix if present, otherwise use full class name
             if class_simple_name.endswith("Interaction"):
-                name = class_simple_name[:-11].lower()  # Remove "Interaction" (11 chars)
+                name = class_simple_name[:-11].lower()  # "Interaction"を削除（11文字）
             else:
                 name = class_simple_name.lower()
 
-        # Check for duplicate names
         if name in interaction_map:
             raise ValueError(f"Duplicate interaction name '{name}' found. Each interaction must have a unique name.")
 
-        # Inject the name into the config
         config["name"] = name
 
-        # Create the interaction instance
+        # interactionインスタンスを作成
         interaction = interaction_cls(config=config)
         interaction_map[name] = interaction
 

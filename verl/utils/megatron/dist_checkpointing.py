@@ -25,13 +25,11 @@ from megatron.core.dist_checkpointing.strategies.fully_parallel import (
 
 def save_dist_checkpointing(sharded_state_dict, ckpt_path, async_save=False):
     validate_sharding_integrity = True
-    # Get checkpointing strategies
     save_strategy = get_default_save_sharded_strategy("torch_dist")
     save_strategy = FullyParallelSaveStrategyWrapper(
         save_strategy, mpu.get_data_parallel_group(with_context_parallel=True)
     )
 
-    # Save model sharded state dicts
     async_save_request = dist_checkpointing.save(
         sharded_state_dict,
         ckpt_path,
@@ -44,13 +42,11 @@ def save_dist_checkpointing(sharded_state_dict, ckpt_path, async_save=False):
 
 
 def load_dist_checkpointing(sharded_state_dict, ckpt_dir):
-    # Get checkpointing strategies
     load_strategy = get_default_load_sharded_strategy(ckpt_dir)
     load_strategy = FullyParallelLoadStrategyWrapper(
         load_strategy, mpu.get_data_parallel_group(with_context_parallel=True)
     )
 
-    # Load model sharded state dicts
     state_dict = dist_checkpointing.load(sharded_state_dict, ckpt_dir, sharded_strategy=load_strategy)
 
     return state_dict

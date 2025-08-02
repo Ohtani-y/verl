@@ -35,7 +35,7 @@ class MCPClientManager:
     async def initialize(self, config_path, rate_limit: float = 10.0):
         if self.initialized:
             return
-        """Initialize the MCP Client Manager and start all clients"""
+        """MCP Client Manager を初期化し、すべてのクライアントを開始"""
         result = self._load_config(config_path)
         servers = result[self.rootServerName]
         exclude_sse_servers = {self.rootServerName: {}}
@@ -51,12 +51,10 @@ class MCPClientManager:
         if exclude_sse_servers[self.rootServerName]:
             self.clients.append(Client(exclude_sse_servers))
 
-        # Initialize rate limiter
         self.rate_limiter = TokenBucket(rate_limit)
         self.initialized = True
 
     async def call_tool(self, tool_name, parameters, timeout):
-        # Apply rate limiting
         while not self.rate_limiter.acquire():
             await asyncio.sleep(0.1)
 
@@ -87,9 +85,9 @@ class MCPClientManager:
             with open(file) as f:
                 return json.load(f)
         except FileNotFoundError:
-            logger.warning(f'the "{file}" file was not found')
+            logger.warning(f'ファイル "{file}" が見つかりません')
         except Exception:
-            logger.error(f'there was an error reading the "{file}" file')
+            logger.error(f'ファイル "{file}" の読み込み中にエラーが発生しました')
 
         return {}
 

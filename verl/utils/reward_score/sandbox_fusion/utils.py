@@ -23,14 +23,13 @@ from typing import Any, Optional
 
 import requests
 
-DEFAULT_TIMEOUT = 10  # Default compile and run timeout
+DEFAULT_TIMEOUT = 10  # デフォルトのコンパイルと実行タイムアウト
 MAX_RETRIES = 3
 INITIAL_RETRY_DELAY = 1
 API_TIMEOUT = 10
 
 logger = logging.getLogger(__name__)
 
-# Define supported languages list (optional, for documentation or validation)
 SUPPORTED_LANGUAGES = [
     "python",
     "cpp",
@@ -72,26 +71,26 @@ def call_sandbox_api(
     run_timeout: int,
     memory_limit_mb: int,
     language: str = "python",
-) -> tuple[Optional[dict[str, Any]], Optional[str]]:  # <-- Remove request_id parameter
+) -> tuple[Optional[dict[str, Any]], Optional[str]]:  # <-- request_id パラメータを削除
     """
-    Calls the remote sandbox API to execute code with retry logic for Gateway Timeout,
-    using increasing delay between retries. Logs internal calls with a unique ID.
+    Gateway Timeout に対するリトライロジックを使用してリモート sandbox API を呼び出し、
+    リトライ間の遅延を増加させながらコードを実行します。一意の ID で内部呼び出しをログに記録します。
 
     Args:
-        sandbox_fusion_url: The URL of the sandbox fusion API.
-        code: The code string to execute.
-        stdin: The standard input string.
-        compile_timeout: Compile timeout in seconds.
-        run_timeout: Run timeout in seconds.
-        language: The programming language of the code (e.g., "python", "cpp", "java"). Defaults to "python".
+        sandbox_fusion_url: sandbox fusion API の URL
+        code: 実行するコード文字列
+        stdin: 標準入力文字列
+        compile_timeout: コンパイルタイムアウト（秒）
+        run_timeout: 実行タイムアウト（秒）
+        language: コードのプログラミング言語（例："python", "cpp", "java"）。デフォルトは "python"
 
     Returns:
-        A tuple (response_json, error_message).
-        If successful, response_json is the API's returned JSON object, error_message is None.
-        If failed after retries, response_json is None, error_message contains the error information.
+        タプル (response_json, error_message)
+        成功した場合、response_json は API が返した JSON オブジェクト、error_message は None
+        リトライ後に失敗した場合、response_json は None、error_message にエラー情報が含まれる
     """
-    request_id = str(uuid.uuid4())  # <-- Generate request_id internally
-    log_prefix = f"[Request ID: {request_id}] "  # <-- Create log prefix
+    request_id = str(uuid.uuid4())  # <-- request_id を内部で生成
+    log_prefix = f"[Request ID: {request_id}] "  # <-- ログプレフィックスを作成
 
     if language not in SUPPORTED_LANGUAGES:
         error_msg = f"{log_prefix}Unsupported language: {language}"
@@ -105,16 +104,15 @@ def call_sandbox_api(
             "code": code,
             "stdin": stdin,
             "memory_limit_MB": memory_limit_mb,
-            "language": language,  # Use the passed language parameter
+            "language": language,  # 渡された language パラメータを使用
             "files": {},
             "fetch_files": [],
         }
     )
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    # Calculate a reasonable request timeout based on compile/run timeouts plus a buffer
     request_timeout = compile_timeout + run_timeout + API_TIMEOUT
 
-    last_error = None  # Store the last error encountered
+    last_error = None  # 最後に発生したエラーを保存
 
     for attempt in range(MAX_RETRIES):
         try:
@@ -128,7 +126,6 @@ def call_sandbox_api(
                 timeout=request_timeout,  # Use the calculated timeout
             )
 
-            # Check for Gateway Timeout (504) specifically for retrying
             if response.status_code == 504:
                 last_error = (
                     f"{log_prefix}API Request Error: Gateway Timeout (504) on attempt "

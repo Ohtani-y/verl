@@ -42,9 +42,9 @@ def qwen2_flash_attn_forward(
     position_embeddings: Optional[tuple[torch.Tensor, torch.Tensor]] = None,  # will become mandatory in v4.46
 ):
     """
-    Adapted from transformers 4.47.1 to support Ulysses sequence parallelism.
+    Ulysses sequence parallelism をサポートするため transformers 4.47.1 から適応。
 
-    NOTE: This function is only tested on transformers versions between 4.45.0 and 4.47.1.
+    注意: この関数は transformers バージョン 4.45.0 から 4.47.1 の間でのみテストされています。
     """
     bsz, q_len, _ = hidden_states.size()
 
@@ -67,7 +67,7 @@ def qwen2_flash_attn_forward(
         key_states = gather_seq_scatter_heads(key_states, seq_dim=2, head_dim=1)
         value_states = gather_seq_scatter_heads(value_states, seq_dim=2, head_dim=1)
 
-    full_q_len = query_states.size(2)  # full seq length
+    full_q_len = query_states.size(2)  # 完全なシーケンス長
 
     if position_embeddings is None:
         logger.warning_once(
@@ -82,22 +82,17 @@ def qwen2_flash_attn_forward(
     query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
     if past_key_value is not None:
-        cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}  # Specific to RoPE models
+        cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}  # RoPE モデル固有
         key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
-    # repeat k/v heads if n_kv_heads < n_heads
     key_states = repeat_kv(key_states, self.num_key_value_groups)
     value_states = repeat_kv(value_states, self.num_key_value_groups)
     dropout_rate = 0.0 if not self.training else self.attention_dropout
 
-    # In PEFT, usually we cast the layer norms in float32 for training stability reasons
-    # therefore the input hidden states gets silently casted in float32. Hence, we need
-    # cast them back in float16 just to be sure everything works as expected.
     input_dtype = query_states.dtype
     if input_dtype == torch.float32:
         if torch.is_autocast_enabled():
             target_dtype = torch.get_autocast_gpu_dtype()
-        # Handle the case where the model is quantized
         elif hasattr(self.config, "_pre_quantization_dtype"):
             target_dtype = self.config._pre_quantization_dtype
         else:
@@ -113,7 +108,6 @@ def qwen2_flash_attn_forward(
         key_states = key_states.to(target_dtype)
         value_states = value_states.to(target_dtype)
 
-    # Reashape to the expected shape for Flash Attention
     query_states = query_states.transpose(1, 2)
     key_states = key_states.transpose(1, 2)
     value_states = value_states.transpose(1, 2)
@@ -140,7 +134,7 @@ def qwen2_flash_attn_forward(
         use_top_left_mask=self._flash_attn_uses_top_left_mask,
     )
 
-    # use full_q_len to reshape
+    # full_q_len を使用して再整形
     attn_output = attn_output.reshape(bsz, full_q_len, -1, self.head_dim).contiguous()
     ########## AlltoAll for Ulysses ##########
     if ulysses_sp_size > 1:
@@ -164,9 +158,9 @@ def qwen2_attn_forward(
     **kwargs,
 ) -> tuple[torch.Tensor, Optional[torch.Tensor], Optional[tuple[torch.Tensor]]]:
     """
-    Adapted from transformers 4.49.0 to support Ulysses sequence parallelism for transformers >= 4.48.0.
+    transformers >= 4.48.0 で Ulysses sequence parallelism をサポートするため transformers 4.49.0 から適応。
 
-    NOTE: This function has been tested only on transformers versions between 4.48.0 and 4.50.0.
+    注意: この関数は transformers バージョン 4.48.0 から 4.50.0 の間でのみテストされています。
     """
     from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 
@@ -194,7 +188,6 @@ def qwen2_attn_forward(
     query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
     if past_key_value is not None:
-        # sin and cos are specific to RoPE models; cache_position needed for the static cache
         cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
         key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
@@ -227,7 +220,7 @@ def qwen2_attn_forward(
         attention_mask,
         dropout=0.0 if not self.training else self.attention_dropout,
         scaling=self.scaling,
-        sliding_window=sliding_window,  # main diff with Llama
+        sliding_window=sliding_window,  # Llama との主な違い
         **kwargs,
     )
 

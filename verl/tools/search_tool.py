@@ -37,9 +37,8 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 T = TypeVar("T")
 
 
-# Adapted from verl/tools/sandbox_fusion_tools.py
 class PoolMode(Enum):
-    """Execution pool mode enumeration."""
+    """実行プールモードの列挙型。"""
 
     ThreadMode = 1
     ProcessMode = 2
@@ -47,46 +46,46 @@ class PoolMode(Enum):
 
 @ray.remote(concurrency_groups={"acquire": 1, "release": 10})
 class TokenBucketWorker:
-    """Ray actor for rate limiting using token bucket algorithm."""
+    """トークンバケットアルゴリズムを使用したレート制限のための Ray アクター。"""
 
     def __init__(self, rate_limit: int):
         self.rate_limit = rate_limit
-        self.current_count = 0  # For observability
+        self.current_count = 0  # 観測可能性のため
         self._semaphore = threading.Semaphore(rate_limit)
 
     @ray.method(concurrency_group="acquire")
     def acquire(self):
-        """Acquire a token from the bucket."""
+        """バケットからトークンを取得する。"""
         self._semaphore.acquire()
         self.current_count += 1
 
     @ray.method(concurrency_group="release")
     def release(self):
-        """Release a token back to the bucket."""
+        """トークンをバケットに戻す。"""
         self._semaphore.release()
         self.current_count -= 1
 
     def get_current_count(self):
-        """Get current number of acquired tokens."""
+        """現在取得されているトークン数を取得する。"""
         return self.current_count
 
 
 class SearchExecutionWorker:
-    """Worker for executing search operations with optional rate limiting."""
+    """オプションのレート制限付きで検索操作を実行するワーカー。"""
 
     def __init__(self, enable_global_rate_limit=True, rate_limit=10):
         self.rate_limit_worker = self._init_rate_limit(rate_limit) if enable_global_rate_limit else None
 
     def _init_rate_limit(self, rate_limit):
-        """Initialize singleton rate limiter."""
+        """シングルトンレート制限器を初期化する。"""
         return TokenBucketWorker.options(name="rate-limiter", get_if_exists=True).remote(rate_limit)
 
     def ping(self):
-        """Health check method."""
+        """ヘルスチェックメソッド。"""
         return True
 
     def execute(self, fn: Callable[..., T], *fn_args, **fn_kwargs) -> T:
-        """Execute function with optional rate limiting."""
+        """オプションのレート制限付きで関数を実行する。"""
         if self.rate_limit_worker:
             with ExitStack() as stack:
                 stack.callback(self.rate_limit_worker.release.remote)
@@ -94,7 +93,6 @@ class SearchExecutionWorker:
                 try:
                     return fn(*fn_args, **fn_kwargs)
                 except Exception as e:
-                    # TODO we should make this available to the tool caller
                     logger.warning(f"Error when executing search: {e}")
         else:
             return fn(*fn_args, **fn_kwargs)
@@ -103,7 +101,7 @@ class SearchExecutionWorker:
 def init_search_execution_pool(
     num_workers: int, enable_global_rate_limit=True, rate_limit=10, mode: PoolMode = PoolMode.ThreadMode
 ):
-    """Initialize search execution pool."""
+    """検索実行プールを初期化する。"""
     if mode == PoolMode.ThreadMode:
         return (
             ray.remote(SearchExecutionWorker)

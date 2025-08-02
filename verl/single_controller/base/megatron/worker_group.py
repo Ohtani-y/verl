@@ -25,30 +25,30 @@ class MegatronWorkerGroup(WorkerGroup):
         self._megatron_global_info: DistGlobalInfo = None
 
     def init_megatron(self, default_megatron_kwargs: dict = None):
-        raise NotImplementedError("MegatronWorkerGroup.init_megatron should be overwritten")
+        raise NotImplementedError("MegatronWorkerGroup.init_megatron は上書きされる必要があります")
 
     def get_megatron_rank_info(self, rank: int) -> DistRankInfo:
-        assert 0 <= rank < self.world_size, f"rank must be from [0, world_size), Got {rank}"
+        assert 0 <= rank < self.world_size, f"rank は [0, world_size) の範囲である必要があります。取得した値: {rank}"
         return self._megatron_rank_info[rank]
 
     @property
     def tp_size(self):
-        assert self._megatron_global_info is not None, "MegatronWorkerGroup._megatron_global_info must be initialized"
+        assert self._megatron_global_info is not None, "MegatronWorkerGroup._megatron_global_info は初期化されている必要があります"
         return self._megatron_global_info.tp_size
 
     @property
     def dp_size(self):
-        assert self._megatron_global_info is not None, "MegatronWorkerGroup._megatron_global_info must be initialized"
+        assert self._megatron_global_info is not None, "MegatronWorkerGroup._megatron_global_info は初期化されている必要があります"
         return self._megatron_global_info.dp_size
 
     @property
     def pp_size(self):
-        assert self._megatron_global_info is not None, "MegatronWorkerGroup._megatron_global_info must be initialized"
+        assert self._megatron_global_info is not None, "MegatronWorkerGroup._megatron_global_info は初期化されている必要があります"
         return self._megatron_global_info.pp_size
 
     @property
     def cp_size(self):
-        assert self._megatron_global_info is not None, "MegatronWorkerGroup._megatron_global_info must be initialized"
+        assert self._megatron_global_info is not None, "MegatronWorkerGroup._megatron_global_info は初期化されている必要があります"
         return self._megatron_global_info.cp_size
 
     def get_megatron_global_info(self):

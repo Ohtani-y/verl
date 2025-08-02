@@ -43,7 +43,6 @@ class PoolMode(Enum):
 class TokenBucketWorker:
     def __init__(self, rate_limit: int):
         self.rate_limit = rate_limit
-        # this only used for observalability
         self.current_count = 0
         self._semaphore = threading.Semaphore(rate_limit)
 
@@ -66,8 +65,7 @@ class ExecutionWorker:
         self.rate_limit_worker = self._init_rate_limit(rate_limit) if enable_global_rate_limit else None
 
     def _init_rate_limit(self, rate_limit):
-        # TODO validation for rate_limit
-        # A Singleton Rate Limitor
+        # シングルトン Rate Limitor
         return TokenBucketWorker.options(name="rate-limiter", get_if_exists=True).remote(rate_limit)
 
     def ping(self):
@@ -80,7 +78,6 @@ class ExecutionWorker:
             try:
                 return fn(*fn_args, **fn_kwargs)
             except Exception as e:
-                # TODO we should make this available to the tool caller
                 logger.warning(f"Error when executing code: {e}")
 
 
@@ -94,18 +91,18 @@ def init_execution_pool(
             .remote(enable_global_rate_limit=enable_global_rate_limit, rate_limit=rate_limit)
         )
     else:
-        raise NotImplementedError("Process mode is not implemented yet")
+        raise NotImplementedError("Process mode はまだ実装されていません")
         # return ray.util.multiprocessing.Pool(processes=num_workers)
 
 
 class SandboxFusionTool(BaseTool):
-    """A tool for executing the code using sanbox fusion image.
+    """sandbox fusion image を使用してコードを実行するためのツール。
 
-    - `get_openai_tool_schema`: return the tool schema in OpenAI format.
-    - `create`: create a tool instance for a trajectory.
-    - `execute`: execute the tool.
-    - `calc_reward`: calculate the reward respect to tool state.
-    - `release`: release the tool instance.
+    - `get_openai_tool_schema`: OpenAI 形式でツールスキーマを返す。
+    - `create`: 軌跡用のツールインスタンスを作成する。
+    - `execute`: ツールを実行する。
+    - `calc_reward`: ツール状態に関する報酬を計算する。
+    - `release`: ツールインスタンスを解放する。
     """
 
     def __init__(self, config: dict, tool_schema: OpenAIFunctionToolSchema):
@@ -130,7 +127,6 @@ class SandboxFusionTool(BaseTool):
         """
         super().__init__(config, tool_schema)
         self._instance_dict = {}
-        # TODO: better documentation for the config
         self.num_workers = config.get("num_workers", 10)
         self.rate_limit = config.get("rate_limit", 10)
         self.default_timeout = config.get("default_timeout", 30)
@@ -171,14 +167,13 @@ class SandboxFusionTool(BaseTool):
             code = str(code)
 
         result = await self.execution_pool.execute.remote(self.execute_code, instance_id, code, timeout, language)
-        # sandbox has no score or metrics, use Nones
+        # sandbox にはスコアやメトリクスがないため、None を使用
         return result, None, None
 
     def execute_code(self, instance_id, code, timeout=30, language="python"):
         result_status, metadata = _process_single_case(
             0, None, None, self.sandbox_fusion_url, code, timeout, self.memory_limit_mb, language
         )
-        # we should always expect this since we don't have correct answer
         if metadata["run_status"] == "Finished":
             actual_output = metadata["stdout"] + metadata["stderr"]
             logger.debug(f"actual_output from sandbox fusion: {actual_output},{instance_id}")

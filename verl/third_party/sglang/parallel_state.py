@@ -3,7 +3,7 @@
 # Adapted from
 # https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/parallel_state.py
 # Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
-"""Model and data parallel groups."""
+"""モデルとデータ並列グループ。"""
 
 import os
 from typing import Optional
@@ -24,17 +24,13 @@ This version is strongly tied with Megatron to implement HybridEngine and weight
 
 """
 
-# Device mesh for using DTensor
 _DEVICE_MESH = None
 
-# Tensor model parallel group that the current rank belongs to.
 _TP = None
-# Pipeline model parallel group that the current rank belongs to.
 _PP = None
 
 
-# This method is for initializing the ParallelGroup when using HybridEngine
-# NOTE(linjunrong): this function is for megatron
+# NOTE(linjunrong): この関数は megatron 用
 def initialize_parallel_state(
     distributed_init_method: str = "env://",
     backend: str = "nccl",
@@ -42,24 +38,18 @@ def initialize_parallel_state(
     num_tp_per_train_tp: int = 1,
     pipeline_model_parallel_size: int = 1,
 ):
-    # torch.distributed.all_reduce does not free the input tensor until
-    # the synchronization point. This causes the memory usage to grow
-    # as the number of all_reduce calls increases. This env var disables
-    # this behavior.
-    # Related issue:
+    # torch.distributed.all_reduce は同期ポイントまで入力テンソルを解放しない
     # https://discuss.pytorch.org/t/cuda-allocation-lifetime-for-inputs-to-distributed-all-reduce/191573
     os.environ["TORCH_NCCL_AVOID_RECORD_STREAMS"] = "1"
 
-    # NOTE(sgm): Modify for verl, Env vars will be set by TORCHRUN.
+    # NOTE(sgm): verl 用に修正、環境変数は TORCHRUN によって設定される
     rank = int(os.getenv("RANK", "-1"))
     local_rank = int(os.getenv("LOCAL_RANK", "0"))
 
-    # Use the world_size set by TORCHRUN
     world_size = int(os.getenv("WORLD_SIZE", "-1"))
     assert world_size != -1, "The world_size is set to -1, not initialized by TORCHRUN"
     init_distributed_environment(world_size, rank, distributed_init_method, local_rank, backend)
     if torch.distributed.get_world_size() > 1:
-        # NOTE: build a separate inference group with infer tp & micro dp
         initialize_model_parallel_for_sglang(
             tensor_model_parallel_size=tensor_model_parallel_size,
             num_tensor_model_parallel_groups_per_train_tp=num_tp_per_train_tp,
@@ -68,12 +58,7 @@ def initialize_parallel_state(
         initialize_model_parallel(tensor_model_parallel_size, pipeline_model_parallel_size, backend)
 
 
-# NOTE(linjunrong): After init SGLang rollout using class EngineFragment, user should always remember to call
-# this function to sync the _TP, _PP define at the beginning of this file. Otherwise, only the conterparts
-# inside sglang.srt.distributed are init as ProcessGroup, the symbols defined in this file remain as None.
-# It could be weird to maintain two _TP and _PP, I follow the same way to maintain an extra ones for
-# verl itself as how it was done in verl.third_party.vllm.parallel_state. Note that the process is a little
-# bit different
+# NOTE(linjunrong): EngineFragment クラスを使用して SGLang ロールアウトを初期化した後、
 def ensure_model_parallel_initialized(
     tensor_model_parallel_size: int,
     pipeline_model_parallel_size: int = 1,

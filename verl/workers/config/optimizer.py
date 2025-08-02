@@ -24,14 +24,14 @@ __all__ = ["OptimizerConfig", "FSDPOptimizerConfig", "McoreOptimizerConfig"]
 
 @dataclass
 class OptimizerConfig(BaseConfig):
-    """Base optimizer configuration.
+    """基本オプティマイザ設定。
 
     Args:
-        lr (float): learning rate. Must be specified.
-        lr_warmup_steps_ratio (float): Warmup steps ratio; total steps will be injected at runtime.
-        total_training_steps (int): Total training steps (must be overridden at runtime).
-        weight_decay (float): Weight decay factor.
-        lr_warmup_steps (Optional[int]): Number of warmup steps; None delegates to lr_warmup_steps_ratio.
+        lr (float): 学習率。必須で指定する必要があります。
+        lr_warmup_steps_ratio (float): ウォームアップステップ比率；総ステップ数は実行時に注入されます。
+        total_training_steps (int): 総トレーニングステップ数（実行時にオーバーライドする必要があります）。
+        weight_decay (float): 重み減衰係数。
+        lr_warmup_steps (Optional[int]): ウォームアップステップ数；None の場合は lr_warmup_steps_ratio に委譲されます。
     """
 
     lr: float = MISSING
@@ -46,13 +46,13 @@ class OptimizerConfig(BaseConfig):
 
 @dataclass
 class FSDPOptimizerConfig(OptimizerConfig):
-    """FSDP optimizer configuration extending base OptimizerConfig.
+    """基本 OptimizerConfig を拡張した FSDP オプティマイザ設定。
 
     Args:
-        lr (float): Learning rate.
-        min_lr_ratio (Optional[float]): Minimum LR ratio for cosine schedule.
-        warmup_style (str): LR warmup style: "constant" or "cosine".
-        num_cycles (float): Number of cosine cycles in LR schedule.
+        lr (float): 学習率。
+        min_lr_ratio (Optional[float]): cosine スケジュールの最小学習率比率。
+        warmup_style (str): 学習率ウォームアップスタイル："constant" または "cosine"。
+        num_cycles (float): 学習率スケジュールでの cosine サイクル数。
     """
 
     min_lr_ratio: Optional[float] = None
@@ -66,20 +66,20 @@ class FSDPOptimizerConfig(OptimizerConfig):
 
 @dataclass
 class McoreOptimizerConfig(OptimizerConfig):
-    """Mcore optimizer configuration extending base OptimizerConfig.
+    """基本 OptimizerConfig を拡張した Mcore オプティマイザ設定。
 
     Args:
-        optimizer (str): Optimizer name; default is "adam".
-        lr (float): Learning rate.
-        clip_grad (float): Gradient clipping norm.
-        lr_warmup_init (float): Initial learning rate for warmup; defaults to 0.0.
-        lr_decay_steps (Optional[int]): Number of decay steps.
-        lr_decay_style (str): LR decay style: "constant", "linear", "cosine", or "inverse_square_root".
-        min_lr (float): Minimum learning rate.
-        weight_decay_incr_style (str): Weight decay increment style: "constant" or "cosine".
-        lr_wsd_decay_style (str): Weight-standard-deviation decay style: "constant", "exponential", or "cosine".
-        lr_wsd_decay_steps (Optional[int]): Number of steps for weight-standard-deviation decay.
-        use_checkpoint_opt_param_scheduler (bool): Whether to use checkpoint optimizer parameter scheduler.
+        optimizer (str): オプティマイザ名；デフォルトは "adam"。
+        lr (float): 学習率。
+        clip_grad (float): 勾配クリッピングのノルム。
+        lr_warmup_init (float): ウォームアップの初期学習率；デフォルトは 0.0。
+        lr_decay_steps (Optional[int]): 減衰ステップ数。
+        lr_decay_style (str): 学習率減衰スタイル："constant"、"linear"、"cosine"、または "inverse_square_root"。
+        min_lr (float): 最小学習率。
+        weight_decay_incr_style (str): 重み減衰増分スタイル："constant" または "cosine"。
+        lr_wsd_decay_style (str): 重み標準偏差減衰スタイル："constant"、"exponential"、または "cosine"。
+        lr_wsd_decay_steps (Optional[int]): 重み標準偏差減衰のステップ数。
+        use_checkpoint_opt_param_scheduler (bool): チェックポイントオプティマイザパラメータスケジューラを使用するかどうか。
     """
 
     optimizer: str = "adam"

@@ -47,14 +47,14 @@ def noop_context() -> Any:
 
 
 def get_dynamic_pipeline_shards(layer_num: int, pp_size: int) -> list[int]:
-    """Calculate the pipeline sharding configuration for Megatron-LM.
+    """Megatron-LM のパイプライン分散設定を計算します。
 
     Args:
-        layer_num: Total number of layers in the model.
-        pp_size: Number of pipeline parallel ranks.
+        layer_num: モデルの総レイヤー数。
+        pp_size: パイプライン並列ランク数。
 
     Returns:
-        layer number of each pp rank. Make the sharding of the pipeline as uniform as possible.
+        各パイプライン並列ランクのレイヤー数。パイプラインの分散をできるだけ均等にします。
     """
     if layer_num < pp_size:
         raise ValueError(f"layer_num {layer_num} must be greater than pp_size {pp_size}.")
@@ -84,7 +84,6 @@ def get_dynamic_pipeline_shards(layer_num: int, pp_size: int) -> list[int]:
                 )
             )
 
-    # sort by diff of layer_num, to make it as uniform as possible
     res = sorted(shards_strategy, key=lambda x: x[1])[0][0]
     assert sum(res) == layer_num, f"sum(res)={sum(res)} != layer_num={layer_num}, pp_size={pp_size}"
     return res

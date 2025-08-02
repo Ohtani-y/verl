@@ -40,9 +40,8 @@ async def initialize_mcp_tool(tool_cls, tool_config) -> list:
     mcp_servers_config_path = tool_config.mcp.mcp_servers_config_path
     tool_selected_list = tool_config.mcp.tool_selected_list if "tool_selected_list" in tool_config.mcp else None
     await ClientManager.initialize(mcp_servers_config_path, tool_config.config.rate_limit)
-    # Wait for MCP client to be ready
     max_retries = 10
-    retry_interval = 2  # seconds
+    retry_interval = 2  # 秒
     for i in range(max_retries):
         tool_schemas = await ClientManager.fetch_tool_schemas(tool_selected_list)
         if tool_schemas:
@@ -52,7 +51,6 @@ async def initialize_mcp_tool(tool_cls, tool_config) -> list:
             await asyncio.sleep(retry_interval)
     else:
         raise RuntimeError("Failed to initialize MCP tools after maximum retries")
-    # mcp registry
     assert len(tool_schemas), "mcp tool is empty"
     for tool_schema_dict in tool_schemas:
         logger.debug(f"tool_schema_dict: {tool_schema_dict}")
@@ -83,9 +81,6 @@ def initialize_tools_from_config(tools_config_file):
     tools_config = OmegaConf.load(tools_config_file)
     tool_list = []
 
-    # Use a temporary event loop in a new thread because event
-    # loop may already exist in new async architecture while retaining
-    # backwards compatibility
     tmp_event_loop = asyncio.new_event_loop()
     thread = threading.Thread(target=tmp_event_loop.run_forever, name="mcp tool list fetcher", daemon=True)
 

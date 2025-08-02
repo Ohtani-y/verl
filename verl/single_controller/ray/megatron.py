@@ -22,21 +22,21 @@ from verl.single_controller.base.megatron.worker_group import MegatronWorkerGrou
 from .base import RayClassWithInitArgs, RayResourcePool, RayWorkerGroup
 
 
-# NOTE(sgm): for open-source megatron-core
+# NOTE(sgm): オープンソース megatron-core 用
 class NVMegatronRayWorkerGroup(RayWorkerGroup, MegatronWorkerGroup):
     """
-    MegatronWorkerGroup will query each worker of its megatron rank info and store it inside the WorkerGroup
-    so that the dispatcher can use it to dispatch data.
+    MegatronWorkerGroup は各ワーカーの megatron ランク情報を照会し、WorkerGroup 内に保存します。
+    これにより、ディスパッチャーがデータをディスパッチする際に使用できます。
     """
 
     def __init__(self, resource_pool: RayResourcePool, ray_cls_with_init: RayClassWithInitArgs, **kwargs):
         """
-        Initialize the NVMegatronRayWorkerGroup.
+        NVMegatronRayWorkerGroup を初期化します。
 
         Args:
-            resource_pool (RayResourcePool): The resource pool containing worker resources
-            ray_cls_with_init (RayClassWithInitArgs): The Ray class with initialization arguments
-            **kwargs: Additional keyword arguments to pass to the parent class
+            resource_pool (RayResourcePool): ワーカーリソースを含むリソースプール
+            ray_cls_with_init (RayClassWithInitArgs): 初期化引数を持つ Ray クラス
+            **kwargs: 親クラスに渡す追加のキーワード引数
         """
         super().__init__(resource_pool=resource_pool, ray_cls_with_init=ray_cls_with_init, **kwargs)
         self._megatron_rank_info: DistRankInfo = self.execute_all_sync(method_name="get_megatron_rank_info")
@@ -47,8 +47,8 @@ class NVMegatronRayWorkerGroup(RayWorkerGroup, MegatronWorkerGroup):
 
 class MegatronRayWorkerGroup(RayWorkerGroup, MegatronWorkerGroup):
     """
-    MegatronWorkerGroup will query each worker of its megatron rank info and store it inside the WorkerGroup
-    so that the dispatcher can use it to dispatch data.
+    MegatronWorkerGroup は各ワーカーの megatron ランク情報を照会し、WorkerGroup 内に保存します。
+    これにより、ディスパッチャーがデータをディスパッチする際に使用できます。
     """
 
     def __init__(
@@ -71,7 +71,5 @@ class MegatronRayWorkerGroup(RayWorkerGroup, MegatronWorkerGroup):
         )
 
     def init_megatron(self, default_megatron_kwargs: Optional[dict] = None):
-        # after super, we will call init of each worker
         if not self._is_init_with_detached_workers:
-            # only init_megatron if the WorkerGroup is created from scratch
             self.execute_all_sync(method_name="init_megatron", default_megatron_kwargs=default_megatron_kwargs)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Generate responses given a dataset of prompts
+プロンプトのデータセットに対してレスポンスを生成する
 """
 
 import os
@@ -47,7 +47,6 @@ def main(config):
 
 def run_generation(config) -> None:
     if not ray.is_initialized():
-        # this is for local ray cluster
         ray.init(
             runtime_env={"env_vars": {"TOKENIZERS_PARALLELISM": "true", "NCCL_DEBUG": "WARN"}},
             num_cpus=config.ray_init.num_cpus,
@@ -58,7 +57,7 @@ def run_generation(config) -> None:
 
 @ray.remote(num_cpus=1)
 def main_task(config):
-    pprint(OmegaConf.to_container(config, resolve=True))  # resolve=True will eval symbol values
+    pprint(OmegaConf.to_container(config, resolve=True))  # resolve=True はシンボル値を評価する
     OmegaConf.resolve(config)
 
     local_path = copy_to_local(config.model.path)
@@ -69,7 +68,6 @@ def main_task(config):
         assert config.data.n_samples == 1, "When temperature=0, n_samples must be 1."
     assert config.data.n_samples >= 1, "n_samples should always >= 1"
 
-    # read dataset. Note that the dataset should directly contain chat template format (e.g., a list of dictionary)
     dataset = pd.read_parquet(config.data.path)
     chat_lst = dataset[config.data.prompt_key].tolist()
 
@@ -114,7 +112,6 @@ def main_task(config):
         data = DataProto.from_dict(batch_dict)
         data_padded, pad_size = pad_dataproto_to_divisor(data, wg.world_size)
 
-        # START TO GENERATE FOR n_samples TIMES
         print(f"[{batch_idx + 1}/{num_batch}] Start to generate.")
         for n_sample in range(config.data.n_samples):
             output_padded = wg.generate_sequences(data_padded)
@@ -131,14 +128,12 @@ def main_task(config):
 
             output_lst[n_sample].extend(output_texts)
 
-    # convert output_lst from (n_samples, n_data) to (n_data, n_sampels)
+    # output_lst を (n_samples, n_data) から (n_data, n_samples) に変換
     output_lst = np.array(output_lst, dtype=object)
     output_lst = np.transpose(output_lst, axes=(1, 0)).tolist()
 
-    # add to the data frame
     dataset["responses"] = output_lst
 
-    # write to a new parquet
     output_dir = os.path.dirname(config.data.output_path)
     makedirs(output_dir, exist_ok=True)
     dataset.to_parquet(config.data.output_path)

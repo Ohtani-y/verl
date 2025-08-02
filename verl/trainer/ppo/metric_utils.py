@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Metrics related to the PPO trainer.
+PPO トレーナーに関連するメトリクス。
 """
 
 from collections import defaultdict
@@ -29,13 +29,13 @@ from verl.utils.import_utils import deprecated
 @deprecated("verl.utils.metric.reduce_metrics")
 def reduce_metrics(metrics: dict[str, list[Any]]) -> dict[str, Any]:
     """
-    Reduces a dictionary of metric lists by computing the mean of each list.
+    各リストの平均を計算してメトリクス辞書を削減します。
 
     Args:
-        metrics: A dictionary mapping metric names to lists of metric values.
+        metrics: メトリクス名をメトリクス値のリストにマッピングする辞書。
 
     Returns:
-        A dictionary with the same keys but with each list replaced by its mean value.
+        同じキーを持つが、各リストが平均値に置き換えられた辞書。
 
     Example:
         >>> metrics = {"loss": [1.0, 2.0, 3.0], "accuracy": [0.8, 0.9, 0.7]}
@@ -49,18 +49,18 @@ def reduce_metrics(metrics: dict[str, list[Any]]) -> dict[str, Any]:
 
 def _compute_response_info(batch: DataProto) -> dict[str, Any]:
     """
-    Computes information about prompts and responses from a batch.
+    バッチからプロンプトとレスポンスに関する情報を計算します。
 
-    This is an internal helper function that extracts masks and lengths for prompts and responses.
+    これはプロンプトとレスポンスのマスクと長さを抽出する内部ヘルパー関数です。
 
     Args:
-        batch: A DataProto object containing batch data with responses and attention masks.
+        batch: レスポンスとアテンションマスクを含むバッチデータを持つ DataProto オブジェクト。
 
     Returns:
-        A dictionary containing:
-            - response_mask: Attention mask for the response tokens
-            - prompt_length: Tensor of prompt lengths for each item in the batch
-            - response_length: Tensor of response lengths for each item in the batch
+        以下を含む辞書:
+            - response_mask: レスポンストークンのアテンションマスク
+            - prompt_length: バッチ内の各アイテムのプロンプト長のテンソル
+            - response_length: バッチ内の各アイテムのレスポンス長のテンソル
     """
     response_length = batch.batch["responses"].shape[-1]
 

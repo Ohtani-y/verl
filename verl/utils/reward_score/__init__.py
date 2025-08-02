@@ -25,20 +25,20 @@ def default_compute_score(
     concurrent_semaphore=None,
     memory_limit_mb=None,
 ):
-    """Compute the score for a given solution based on the data source.
+    """データソースに基づいて与えられた解答のスコアを計算します。
 
     Args:
-        data_source (str): The source dataset identifier which determines the scoring method.
-        solution_str (str): The solution string to be evaluated.
-        ground_truth (str): The ground truth answer for comparison.
-        extra_info (dict, optional): Additional information that might be needed for scoring. Defaults to None.
+        data_source (str): スコアリング方法を決定するソースデータセット識別子。
+        solution_str (str): 評価される解答文字列。
+        ground_truth (str): 比較用の正解答。
+        extra_info (dict, optional): スコアリングに必要な追加情報。デフォルトは None。
 
     Returns:
-        float: The computed score as a floating point number. If the result is a dictionary,
-               it returns the dictionary instead.
+        float: 浮動小数点数として計算されたスコア。結果が辞書の場合は、
+               代わりに辞書を返します。
 
     Raises:
-        NotImplementedError: If the reward function is not implemented for the given data source.
+        NotImplementedError: 指定されたデータソースに対して報酬関数が実装されていない場合。
     """
     if data_source == "openai/gsm8k":
         from . import gsm8k
@@ -48,10 +48,6 @@ def default_compute_score(
         from . import math
 
         res = math.compute_score(solution_str, ground_truth)
-        # [Optional] Math-Verify Integration
-        # For enhanced accuracy, consider utilizing Math-Verify (https://github.com/huggingface/Math-Verify).
-        # Note: Math-Verify needs to be manually installed via pip: `pip install math-verify`.
-        # To use it, override the `compute_score` function with the following implementation:
 
         # from . import math_verify
         # res = math_verify.compute_score(solution_str, ground_truth)
@@ -71,19 +67,15 @@ def default_compute_score(
 
         res = prime_math.compute_score(solution_str, ground_truth)
     elif data_source in ["codecontests", "apps", "codeforces", "taco"]:
-        # Use the passed sandbox_fusion_url if available
         if sandbox_fusion_url:
             from . import sandbox_fusion
 
-            # Pass the URL directly, ground_truth likely contains test cases here
             res = sandbox_fusion.compute_score(
                 sandbox_fusion_url, concurrent_semaphore, memory_limit_mb, solution_str, ground_truth, continuous=True
             )
         else:
-            # If no sandbox URL is provided, fall back to prime_code or raise error
             from . import prime_code
 
-            # Assuming prime_code doesn't need the URL
             res = prime_code.compute_score(solution_str, ground_truth, continuous=True)
     elif data_source in ["hiyouga/geometry3k"]:
         from . import geo3k
@@ -124,7 +116,7 @@ def _default_compute_score(
     memory_limit_mb=None,
 ):
     """
-    Legacy function API to be deprecated. Please use `default_compute_score` instead.
+    廃止予定のレガシー関数 API。代わりに `default_compute_score` を使用してください。
     """
     return default_compute_score(
         data_source, solution_str, ground_truth, extra_info, sandbox_fusion_url, concurrent_semaphore, memory_limit_mb

@@ -23,7 +23,7 @@ from typing import Any, Optional
 
 import requests
 
-DEFAULT_TIMEOUT = 30  # Default search request timeout
+DEFAULT_TIMEOUT = 30  # デフォルトの検索リクエストタイムアウト
 MAX_RETRIES = 10
 INITIAL_RETRY_DELAY = 1
 API_TIMEOUT = 10
@@ -39,20 +39,20 @@ def call_search_api(
     timeout: int = DEFAULT_TIMEOUT,
 ) -> tuple[Optional[dict[str, Any]], Optional[str]]:
     """
-    Calls the remote search API to perform retrieval with retry logic for various errors,
-    using increasing delay between retries. Logs internal calls with a unique ID.
+    様々なエラーに対する再試行ロジックを使用してリモート検索 API を呼び出し、
+    再試行間の遅延を増加させながら検索を実行します。一意の ID で内部呼び出しをログに記録します。
 
     Args:
-        retrieval_service_url: The URL of the retrieval service API.
-        query_list: List of search queries.
-        topk: Number of top results to return.
-        return_scores: Whether to return scores.
-        timeout: Request timeout in seconds.
+        retrieval_service_url: 検索サービス API の URL
+        query_list: 検索クエリのリスト
+        topk: 返すトップ結果の数
+        return_scores: スコアを返すかどうか
+        timeout: リクエストタイムアウト（秒）
 
     Returns:
-        A tuple (response_json, error_message).
-        If successful, response_json is the API's returned JSON object, error_message is None.
-        If failed after retries, response_json is None, error_message contains the error information.
+        タプル (response_json, error_message)
+        成功した場合、response_json は API が返した JSON オブジェクト、error_message は None
+        再試行後に失敗した場合、response_json は None、error_message にエラー情報が含まれる
     """
     request_id = str(uuid.uuid4())
     log_prefix = f"[Search Request ID: {request_id}] "
@@ -75,7 +75,6 @@ def call_search_api(
                 timeout=timeout,
             )
 
-            # Check for Gateway Timeout (504) and other server errors for retrying
             if response.status_code in [500, 502, 503, 504]:
                 last_error = (
                     f"{log_prefix}API Request Error: Server Error ({response.status_code}) on attempt "
@@ -88,10 +87,8 @@ def call_search_api(
                     time.sleep(delay)
                 continue
 
-            # Check for other HTTP errors (e.g., 4xx)
             response.raise_for_status()
 
-            # If successful (status code 2xx)
             logger.info(f"{log_prefix}Search API call successful on attempt {attempt + 1}")
             return response.json(), None
 
@@ -113,22 +110,21 @@ def call_search_api(
             continue
         except requests.exceptions.RequestException as e:
             last_error = f"{log_prefix}API Request Error: {e}"
-            break  # Exit retry loop on other request errors
+            break  # その他のリクエストエラーで再試行ループを終了
         except json.JSONDecodeError as e:
             raw_response_text = response.text if "response" in locals() else "N/A"
             last_error = f"{log_prefix}API Response JSON Decode Error: {e}, Response: {raw_response_text[:200]}"
-            break  # Exit retry loop on JSON decode errors
+            break  # JSON デコードエラーで再試行ループを終了
         except Exception as e:
             last_error = f"{log_prefix}Unexpected Error: {e}"
-            break  # Exit retry loop on other unexpected errors
+            break  # その他の予期しないエラーで再試行ループを終了
 
-    # If loop finishes without returning success, return the last recorded error
     logger.error(f"{log_prefix}Search API call failed. Last error: {last_error}")
     return None, last_error.replace(log_prefix, "API Call Failed: ") if last_error else "API Call Failed after retries"
 
 
 def _passages2string(retrieval_result):
-    """Convert retrieval results to formatted string."""
+    """検索結果をフォーマットされた文字列に変換します。"""
     format_reference = ""
     for idx, doc_item in enumerate(retrieval_result):
         content = doc_item["document"]["contents"]

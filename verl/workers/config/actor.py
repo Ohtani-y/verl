@@ -28,17 +28,17 @@ __all__ = ["PolicyLossConfig", "ActorConfig", "FSDPActorConfig", "McoreActorConf
 
 @dataclass
 class PolicyLossConfig(BaseConfig):
-    """Configuration for policy loss computation.
+    """ポリシー損失計算の設定。
 
-    The inheritance from BaseConfig provides omegaconf.DictConfig-like interface for a dataclass config.
+    BaseConfig からの継承により、dataclass 設定に omegaconf.DictConfig のようなインターフェースを提供します。
 
     Args:
-        loss_mode (str): Loss function mode. Options: 'vanilla', 'clip-cov', 'kl-cov', 'gpg'.
-        clip_cov_ratio (float): Ratio of tokens to be clipped for clip-cov loss.
-        clip_cov_lb (float): Lower bound for clip-cov loss.
-        clip_cov_ub (float): Upper bound for clip-cov loss.
-        kl_cov_ratio (float): Ratio of tokens to be applied KL penalty for kl-cov loss.
-        ppo_kl_coef (float): KL divergence penalty coefficient.
+        loss_mode (str): 損失関数モード。オプション: 'vanilla', 'clip-cov', 'kl-cov', 'gpg'。
+        clip_cov_ratio (float): clip-cov 損失でクリップされるトークンの比率。
+        clip_cov_lb (float): clip-cov 損失の下限。
+        clip_cov_ub (float): clip-cov 損失の上限。
+        kl_cov_ratio (float): kl-cov 損失で KL ペナルティが適用されるトークンの比率。
+        ppo_kl_coef (float): KL 発散ペナルティ係数。
     """
 
     loss_mode: str = "vanilla"

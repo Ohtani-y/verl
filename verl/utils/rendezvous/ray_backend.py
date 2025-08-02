@@ -22,23 +22,27 @@ from ray.util import list_named_actors
 
 @ray.remote
 class NCCLIDStore:
+    """NCCL ID を保存するための Ray アクター"""
     def __init__(self, nccl_id):
+        """NCCL ID を初期化する"""
         self._nccl_id = nccl_id
 
     def get(self):
+        """保存された NCCL ID を取得する"""
         return self._nccl_id
 
 
 def get_nccl_id_store_by_name(name):
+    """名前で NCCL ID ストアアクターを取得する"""
     all_actors = list_named_actors(all_namespaces=True)
     matched_actors = [actor for actor in all_actors if actor.get("name", None) == name]
     if len(matched_actors) == 1:
         actor = matched_actors[0]
         return ray.get_actor(**actor)
     elif len(matched_actors) > 1:
-        logging.warning("multiple actors with same name found: %s", matched_actors)
+        logging.warning("同じ名前の複数のアクターが見つかりました: %s", matched_actors)
     elif len(matched_actors) == 0:
-        logging.info("failed to get any actor named %s", name)
+        logging.info("名前 %s のアクターの取得に失敗しました", name)
     return None
 
 

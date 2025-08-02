@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Apply monkey-patch function to models
+モデルにmonkey-patch関数を適用する
 """
 
 import importlib.metadata
@@ -37,8 +37,8 @@ from verl.utils.ulysses import (
 
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
-    This is the equivalent of torch.repeat_interleave(x, dim=2, repeats=n_rep). The hidden states go from (batch,
-    seqlen, num_key_value_heads, head_dim) to (batch, seqlen, num_attention_heads, head_dim)
+    これは torch.repeat_interleave(x, dim=2, repeats=n_rep) と同等です。hidden states は (batch,
+    seqlen, num_key_value_heads, head_dim) から (batch, seqlen, num_attention_heads, head_dim) に変換されます
     """
     batch, slen, num_key_value_heads, head_dim = hidden_states.shape
     if n_rep == 1:
@@ -55,7 +55,7 @@ def _ulysses_flash_attention_forward(
     position_ids: Optional[torch.Tensor] = None,
     **kwargs,
 ):
-    """Insert all-to-all before and after flash attention.
+    """flash attention の前後に all-to-all を挿入します。
     DeepSpeed-Ulysses: https://arxiv.org/pdf/2309.14509
 
     Args:
@@ -73,9 +73,7 @@ def _ulysses_flash_attention_forward(
     if ulysses_sp_size > 1:
         assert position_ids is not None, "position_ids is required for Ulysses sequence parallelism"
 
-        # NOTE: repeat kv heads to be divided by sequence parallel. Instead of repeating nheads_q//nheads_k,
-        # we choose to repeat sp_size//nheads_k, since flash_attention supports MQA/GQA.
-        # For example:
+        # flash_attention が MQA/GQA をサポートしているため、sp_size//nheads_k を繰り返すことを選択します。
         # - nheads_k=4, sp=8, repeats=2
         # - nheads_k=8, sp=8, repeats=1
         # - nheads_k=16, sp=8, repeats=1
@@ -88,8 +86,6 @@ def _ulysses_flash_attention_forward(
         key_states = gather_seq_scatter_heads(key_states, seq_dim=1, head_dim=2)
         value_states = gather_seq_scatter_heads(value_states, seq_dim=1, head_dim=2)
 
-        # TODO: all_gather position_ids because `prepare_fa2_from_position_ids` needs it, we can eliminate
-        # this all_gather by passing cu_seq_lens_q, cu_seq_lens_k, max_length_k, max_length_q explicitly.
         # https://github.com/huggingface/transformers/pull/33932
 
         # (bsz, seq_len/n) -> (bsz, seq_len)
