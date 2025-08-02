@@ -28,12 +28,12 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 
 class Gsm8kInteraction(BaseInteraction):
-    """A demo interaction for calculating the reward of gsm8k.
+    """GSM8K の報酬計算のためのデモインタラクション。
 
-    - `start_interaction`: start a interaction instance for a trajectory.
-    - `generate_response`: generate the response of the user.
-    - `calculate_score`: calculate the score of the interaction.
-    - `finalize_interaction`: finalize the interaction instance.
+    - `start_interaction`: 軌跡のためのインタラクションインスタンスを開始
+    - `generate_response`: ユーザーの応答を生成
+    - `calculate_score`: インタラクションのスコアを計算
+    - `finalize_interaction`: インタラクションインスタンスを終了
     """
 
     def __init__(self, config: dict):

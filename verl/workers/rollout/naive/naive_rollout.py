@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-In single GPU rollout, the sequences are generated directly by sampling from the model.
-The output will contain
+単一GPU rolloutでは、シーケンスはモデルからの直接サンプリングによって生成されます。
+出力には以下が含まれます：
 1. output_ids
-2. attention_masks (left padding)
+2. attention_masks (左パディング)
 3. eos_masks
 4. log_probs
 """
@@ -35,12 +35,12 @@ __all__ = ["NaiveRollout"]
 
 class NaiveRollout(BaseRollout):
     def __init__(self, module: nn.Module, config):
-        """A naive rollout. It requires the module to be compatible with huggingface APIs. That is:
-        The module should define __call__ to receive input_ids, attention_mask and position_ids.
-        It outputs a structure that contains logits field.
+        """ナイーブなrollout。モジュールがHugging Face APIと互換性がある必要があります。つまり：
+        モジュールはinput_ids、attention_mask、position_idsを受け取る__call__を定義する必要があります。
+        logitsフィールドを含む構造を出力します。
 
         Args:
-            module: module here follows huggingface APIs
+            module: ここでのモジュールはHugging Face APIに従います
             config: DictConfig
         """
         super().__init__()
@@ -49,12 +49,12 @@ class NaiveRollout(BaseRollout):
 
     @torch.no_grad()
     def generate_sequences(self, prompts: DataProto) -> DataProto:
-        """Generate sequences"""
+        """シーケンスを生成"""
         idx = prompts.batch["input_ids"]  # (bs, prompt_length)
         attention_mask = prompts.batch["attention_mask"]  # left-padded attention_mask
         position_ids = prompts.batch["position_ids"]
 
-        # used to construct attention_mask
+        # attention_maskの構築に使用
         eos_token_id = prompts.meta_info["eos_token_id"]
 
         batch_size = idx.size(0)
@@ -66,22 +66,15 @@ class NaiveRollout(BaseRollout):
 
         logits_lst = []
         for _ in range(self.config.response_length):
-            # if the sequence context is growing too long we must crop it at block_size
             # idx_cond = idx if idx.size(1) <= self.config.block_size else idx[:, -self.config.block_size:]
             idx_cond = idx
-            # forward the model to get the logits for the index in the sequence
-            # we use huggingface APIs here
             output = self.module(input_ids=idx_cond, attention_mask=attention_mask, position_ids=position_ids)
             logits = output.logits
-            # pluck the logits at the final step and scale by desired temperature
             logits = logits[:, -1, :] / self.config.temperature  # (bs, vocab_size)
-            # optionally crop the logits to only the top k options
             if self.config.top_k is not None:
                 v, _ = torch.topk(logits, min(self.config.top_k, logits.size(-1)))
                 logits[logits < v[:, [-1]]] = -float("Inf")
-            # apply softmax to convert logits to (normalized) probabilities
             probs = F.softmax(logits, dim=-1)
-            # sample from the distribution
             if self.config.do_sample:
                 idx_next = torch.multinomial(probs, num_samples=1)
             else:
@@ -95,7 +88,6 @@ class NaiveRollout(BaseRollout):
 
             position_ids = torch.cat((position_ids, position_ids[:, -1:] + 1), dim=-1)
 
-            # append sampled index to the running sequence and continue
             idx = torch.cat((idx, idx_next), dim=1)
             logits_lst.append(logits)
 

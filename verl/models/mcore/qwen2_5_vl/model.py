@@ -31,7 +31,6 @@ from .attention import Qwen2_5VLSelfAttention
 from .vision_model import Qwen2_5VisionModel
 
 
-# Note: This is under development and may be missing features.
 class Qwen2_5VLModel(MegatronModule):
     """Qwen2.5VL multi-modal model.
 

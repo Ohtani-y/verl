@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The abstract base class defining the interface for model training engines.
+モデルトレーニングエンジンのインターフェースを定義する抽象基底クラス。
 """
 
 from typing import Callable
@@ -24,45 +24,43 @@ from verl import DataProto
 
 class BaseEngine:
     """
-    Abstract base class defining the interface for model training engines.
+    モデルトレーニングエンジンのインターフェースを定義する抽象基底クラス。
 
-    Engine implementations must subclass BaseEngine and provide concrete behavior for all methods.
+    エンジンの実装は BaseEngine をサブクラス化し、すべてのメソッドに対して具体的な動作を提供する必要があります。
     """
 
     def __init__(self, config):
         """
-        Initialize the BaseEngine.
+        BaseEngine を初期化します。
 
         Args:
-            config: Configuration object containing parameters for engine setup.
+            config: エンジンセットアップのパラメータを含む設定オブジェクト。
         """
         raise NotImplementedError
 
     def init_model(self):
         """
-        Instantiate or load the model, optimizer, and learning rate scheduler.
+        モデル、オプティマイザー、学習率スケジューラーをインスタンス化または読み込みます。
 
-        Should prepare all components necessary for training or evaluation.
+        トレーニングまたは評価に必要なすべてのコンポーネントを準備する必要があります。
         """
         raise NotImplementedError
 
     def train_mode(self):
         """
-        Context manager entry for switching the engine and model into training mode.
+        エンジンとモデルをトレーニングモードに切り替えるためのコンテキストマネージャー。
 
-        Usage:
+        使用方法:
             with engine.train_mode():
-                # runs in training mode
         """
         raise NotImplementedError
 
     def eval_mode(self):
         """
-        Context manager entry for switching the engine and model into evaluation mode.
+        エンジンとモデルを評価モードに切り替えるためのコンテキストマネージャー。
 
-        Usage:
+        使用方法:
             with engine.eval_mode():
-                # runs in evaluation mode
         """
         raise NotImplementedError
 
@@ -72,15 +70,15 @@ class BaseEngine:
         post_fn: Callable[[DataProto, torch.Tensor], tuple[torch.Tensor, dict[str, torch.Tensor]]],
     ) -> dict[str, torch.Tensor]:
         """
-        Perform inference on a mini batch of data.
+        データのミニバッチで推論を実行します。
 
         Args:
-            data: The input data for inference, typically containing tensors and metadata.
-            post_fn: A post-processing function that takes a micro-batch and predictions as input,
-                     and returns a tuple containing processed predictions and a dictionary of outputs.
+            data: 推論用の入力データ。通常、テンソルとメタデータを含みます。
+            post_fn: マイクロバッチと予測を入力として受け取り、
+                     処理された予測と出力の辞書を含むタプルを返す後処理関数。
 
         Returns:
-            dict[str, torch.Tensor]: A dictionary containing the predictions for the entire batch.
+            dict[str, torch.Tensor]: バッチ全体の予測を含む辞書。
         """
         raise NotImplementedError
 

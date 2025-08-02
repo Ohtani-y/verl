@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains a resharding manager that binds weights from FSDP zero3 to XPerfGPT
+FSDP zero3 から XPerfGPT への重みバインディングを行う再シャーディングマネージャーを含む
 """
 
 from torch.distributed.device_mesh import DeviceMesh
@@ -26,7 +26,7 @@ from .base import BaseShardingManager
 
 class FSDPUlyssesShardingManager(BaseShardingManager):
     """
-    Sharding manager to support data resharding when using FSDP + Ulysses
+    FSDP + Ulysses 使用時のデータ再シャーディングをサポートするシャーディングマネージャー
     """
 
     def __init__(self, device_mesh: DeviceMesh):
@@ -36,24 +36,18 @@ class FSDPUlyssesShardingManager(BaseShardingManager):
 
     def __enter__(self):
         if self.device_mesh is not None:
-            # We have a global SP group
-            # so we have to change to use model-specific sp group
             self.prev_sp_group = get_ulysses_sequence_parallel_group()
             set_ulysses_sequence_parallel_group(self.device_mesh["sp"].get_group())
-            # TODO: check how to set seed for each model
 
     def __exit__(self, exc_type, exc_value, traceback):
-        # restore random states
         if self.device_mesh is not None:
-            # revert to previous sp group
             set_ulysses_sequence_parallel_group(self.prev_sp_group)
-            # TODO: check how to set seed for each model
 
     def preprocess_data(self, data: DataProto) -> DataProto:
         """
-        AllGather data from sp region
-        This is because the data is first sharded along the FSDP dimension as we utilize the DP_COMPUTE
-        In Ulysses, we need to make sure the same data is used across a SP group
+        SP 領域からデータを AllGather する
+        これは DP_COMPUTE を利用するため、データが最初に FSDP 次元に沿ってシャーディングされるためである
+        Ulysses では、SP グループ全体で同じデータが使用されることを確認する必要がある
         """
         if self.device_mesh is not None:
             group = self.device_mesh["sp"].get_group()
@@ -63,7 +57,7 @@ class FSDPUlyssesShardingManager(BaseShardingManager):
 
     def postprocess_data(self, data: DataProto) -> DataProto:
         """
-        Split the data to follow FSDP partition
+        FSDP パーティションに従ってデータを分割する
         """
         if self.device_mesh is not None:
             sp_size = self.device_mesh["sp"].size()

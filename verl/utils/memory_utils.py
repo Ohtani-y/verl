@@ -23,36 +23,30 @@ logger = logging.getLogger(__name__)
 
 def aggressive_empty_cache(force_sync: bool = True, max_retries: int = 3) -> None:
     """
-    More aggressive GPU memory cleanup function, tries to release PyTorch reserved but unallocated memory.
+    より積極的な GPU メモリクリーンアップ関数。PyTorch が予約しているが未割り当てのメモリを解放しようとします。
 
     Args:
-        force_sync: Whether to force device synchronization
-        max_retries: Maximum number of retries
+        force_sync: デバイス同期を強制するかどうか
+        max_retries: 最大再試行回数
     """
     device = get_torch_device()
     if not device.is_available():
         return
 
     for attempt in range(max_retries):
-        # Record memory status before cleanup
         before_reserved = device.memory_reserved()
         before_allocated = device.memory_allocated()
 
-        # Run garbage collection
         gc.collect()
 
-        # Clear PyTorch cache
         device.empty_cache()
 
-        # Force synchronization (optional)
         if force_sync:
             device.synchronize()
 
-        # Record memory status after cleanup
         after_reserved = device.memory_reserved()
         after_allocated = device.memory_allocated()
 
-        # Calculate freed memory
         reserved_freed = before_reserved - after_reserved
         allocated_freed = before_allocated - after_allocated
 
@@ -61,13 +55,12 @@ def aggressive_empty_cache(force_sync: bool = True, max_retries: int = 3) -> Non
             f"{allocated_freed / 1024**3:.2f} GB allocated"
         )
 
-        # Stop retrying if little memory was freed
-        if reserved_freed < 1024**3:  # less than 1GB
+        if reserved_freed < 1024**3:  # 1GB未満
             break
 
 
 def reset_memory_stats() -> None:
-    """Reset GPU memory statistics"""
+    """GPU メモリ統計をリセット"""
     if get_torch_device().is_available():
         device = get_torch_device()
         device.reset_peak_memory_stats()
@@ -75,7 +68,7 @@ def reset_memory_stats() -> None:
 
 
 def get_memory_info() -> dict:
-    """Get detailed GPU memory information"""
+    """詳細な GPU メモリ情報を取得"""
     if not get_torch_device().is_available():
         return {}
 
@@ -93,7 +86,7 @@ def get_memory_info() -> dict:
 
 
 def log_memory_usage(stage: str = "current") -> None:
-    """Log GPU memory usage"""
+    """GPU メモリ使用量をログ出力"""
     if not get_torch_device().is_available():
         return
 
@@ -108,17 +101,15 @@ def log_memory_usage(stage: str = "current") -> None:
 
 
 def optimize_memory_for_inference() -> None:
-    """Optimize GPU memory usage for inference"""
+    """推論用に GPU メモリ使用量を最適化"""
     if not get_torch_device().is_available():
         return
 
-    # Set a more aggressive memory allocation policy
-    get_torch_device().set_per_process_memory_fraction(0.95)  # Use 95% of GPU memory
+    get_torch_device().set_per_process_memory_fraction(0.95)  # GPU メモリの95%を使用
 
-    # Clear cache
     aggressive_empty_cache(force_sync=True)
 
-    logger.info("Optimized GPU memory usage for inference")
+    logger.info("推論用に GPU メモリ使用量を最適化しました")
 
 
 def optimize_memory_for_training() -> None:

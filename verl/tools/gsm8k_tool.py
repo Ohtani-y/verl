@@ -29,13 +29,13 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 
 class Gsm8kTool(BaseTool):
-    """A demo tool for calculating the reward of gsm8k.
+    """GSM8K の報酬計算用デモツール。
 
-    - `get_openai_tool_schema`: return the tool schema in OpenAI format.
-    - `create`: create a tool instance for a trajectory.
-    - `execute`: execute the tool.
-    - `calc_reward`: calculate the reward respect to tool state.
-    - `release`: release the tool instance.
+    - `get_openai_tool_schema`: OpenAI 形式でツールスキーマを返す。
+    - `create`: 軌跡用のツールインスタンスを作成する。
+    - `execute`: ツールを実行する。
+    - `calc_reward`: ツール状態に対する報酬を計算する。
+    - `release`: ツールインスタンスを解放する。
     """
 
     def __init__(self, config: dict, tool_schema: OpenAIFunctionToolSchema):
@@ -88,9 +88,7 @@ class Gsm8kTool(BaseTool):
             self._instance_dict[instance_id]["response"] = "#### " + answer
 
         reward = await self.calc_reward(instance_id)
-        # penalty for non improved answer submission
         tool_reward = 0.0 if reward > self._instance_dict[instance_id]["reward"] else -0.05
-        # update the reward
         self._instance_dict[instance_id]["reward"] = reward
 
         return f"Current parsed {answer=} {reward=}", tool_reward, {}

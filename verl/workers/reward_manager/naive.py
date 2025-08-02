@@ -23,28 +23,27 @@ from verl.workers.reward_manager import register
 
 @register("naive")
 class NaiveRewardManager:
-    """The reward manager."""
+    """報酬マネージャー。"""
 
     def __init__(self, tokenizer, num_examine, compute_score=None, reward_fn_key="data_source") -> None:
         """
-        Initialize the NaiveRewardManager instance.
+        NaiveRewardManager インスタンスを初期化します。
 
         Args:
-            tokenizer: The tokenizer used to decode token IDs into text.
-            num_examine: The number of batches of decoded responses to print to the console for debugging purpose.
-            compute_score: A function to compute the reward score. If None, `default_compute_score` will be used.
-            reward_fn_key: The key used to access the data source in the non-tensor batch data. Defaults to
-                "data_source".
+            tokenizer: トークン ID をテキストにデコードするために使用されるトークナイザー。
+            num_examine: デバッグ目的でコンソールに出力するデコードされた応答のバッチ数。
+            compute_score: 報酬スコアを計算する関数。None の場合、`default_compute_score` が使用されます。
+            reward_fn_key: 非テンソルバッチデータ内のデータソースにアクセスするために使用されるキー。
+                デフォルトは "data_source"。
         """
-        self.tokenizer = tokenizer  # Store the tokenizer for decoding token IDs
-        self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
+        self.tokenizer = tokenizer  # トークン ID をデコードするためのトークナイザーを保存
+        self.num_examine = num_examine  # コンソールに出力するデコードされた応答のバッチ数
         self.compute_score = compute_score or default_compute_score
-        self.reward_fn_key = reward_fn_key  # Store the key for accessing the data source
+        self.reward_fn_key = reward_fn_key  # データソースにアクセスするためのキーを保存
 
     def __call__(self, data: DataProto, return_dict=False):
-        """We will expand this function gradually based on the available datasets"""
+        """利用可能なデータセットに基づいて、この関数を段階的に拡張していきます"""
 
-        # If there is rm score, we directly return rm score. Otherwise, we compute via rm_score_fn
         if "rm_scores" in data.batch.keys():
             if return_dict:
                 return {"reward_tensor": data.batch["rm_scores"]}
@@ -70,7 +69,6 @@ class NaiveRewardManager:
             valid_response_length = data_item.batch["attention_mask"][prompt_length:].sum()
             valid_response_ids = response_ids[:valid_response_length]
 
-            # decode
             prompt_str = self.tokenizer.decode(valid_prompt_ids, skip_special_tokens=True)
             response_str = self.tokenizer.decode(valid_response_ids, skip_special_tokens=True)
 
@@ -89,7 +87,6 @@ class NaiveRewardManager:
 
             if isinstance(score, dict):
                 reward = score["score"]
-                # Store the information including original reward
                 for key, value in score.items():
                     reward_extra_info[key].append(value)
             else:

@@ -19,15 +19,15 @@ from verl.base_config import BaseConfig
 
 @dataclass
 class ProfilerConfig(BaseConfig):
-    """Worker profiler config. Currently only support Nsight system profiler.
+    """ワーカープロファイラー設定。現在は Nsight system profiler のみサポート。
 
-    The inheritance from BaseConfig provides omegaconf.DictConfig-like interface for a dataclass config.
+    BaseConfig からの継承により、データクラス設定に omegaconf.DictConfig のようなインターフェースを提供。
 
     Args:
-        discrete (bool): True for each task has its own database, False for all tasks in one training step
-          share one database.
-        all_ranks (bool): Whether to profile all ranks.
-        ranks (list[int]): The ranks that will be profiled. Defaults to [].
+        discrete (bool): True の場合、各タスクが独自のデータベースを持つ。False の場合、1つのトレーニングステップ内の
+          すべてのタスクが1つのデータベースを共有。
+        all_ranks (bool): すべてのランクをプロファイルするかどうか。
+        ranks (list[int]): プロファイルされるランク。デフォルトは []。
     """
 
     discrete: bool = False
@@ -49,7 +49,7 @@ class ProfilerConfig(BaseConfig):
         )
 
     def __post_init__(self) -> None:
-        """config validation logics go here"""
+        """設定検証ロジックをここに記述"""
         assert isinstance(self.ranks, set | list | tuple), (
             f"Profiler ranks must be of type list, got {type(self.ranks)}"
         )

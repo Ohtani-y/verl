@@ -25,15 +25,15 @@ _HDFS_BIN_PATH = shutil.which("hdfs")
 
 
 def exists(path: str, **kwargs) -> bool:
-    r"""Works like os.path.exists() but supports hdfs.
+    r"""os.path.exists() のように動作しますが、hdfs をサポートします。
 
-    Test whether a path exists. Returns False for broken symbolic links.
+    パスが存在するかどうかをテストします。壊れたシンボリックリンクに対しては False を返します。
 
     Args:
-        path (str): path to test
+        path (str): テストするパス
 
     Returns:
-        bool: True if the path exists, False otherwise
+        bool: パスが存在する場合は True、そうでなければ False
     """
     if _is_non_local(path):
         return _exists(path, **kwargs)
@@ -41,32 +41,29 @@ def exists(path: str, **kwargs) -> bool:
 
 
 def _exists(file_path: str):
-    """hdfs capable to check whether a file_path is exists"""
+    """file_path が存在するかどうかを確認する hdfs 対応関数"""
     if file_path.startswith("hdfs"):
         return _run_cmd(_hdfs_cmd(f"-test -e {file_path}")) == 0
     return os.path.exists(file_path)
 
 
 def makedirs(name, mode=0o777, exist_ok=False, **kwargs) -> None:
-    r"""Works like os.makedirs() but supports hdfs.
+    r"""os.makedirs() のように動作しますが、hdfs をサポートします。
 
-    Super-mkdir; create a leaf directory and all intermediate ones.  Works like
-    mkdir, except that any intermediate path segment (not just the rightmost)
-    will be created if it does not exist. If the target directory already
-    exists, raise an OSError if exist_ok is False. Otherwise no exception is
-    raised.  This is recursive.
+    スーパー mkdir; リーフディレクトリとすべての中間ディレクトリを作成します。mkdir のように動作しますが、
+    中間パスセグメント（最右端だけでなく）が存在しない場合は作成されます。ターゲットディレクトリが
+    既に存在する場合、exist_ok が False なら OSError を発生させます。そうでなければ例外は
+    発生しません。これは再帰的です。
 
     Args:
-        name (str): directory to create
-        mode (int): file mode bits
-        exist_ok (bool): if True, do not raise an exception if the directory already exists
-        kwargs: keyword arguments for hdfs
+        name (str): 作成するディレクトリ
+        mode (int): ファイルモードビット
+        exist_ok (bool): True の場合、ディレクトリが既に存在しても例外を発生させない
+        kwargs: hdfs 用のキーワード引数
 
     """
     if _is_non_local(name):
         # TODO(haibin.lin):
-        # - handle OSError for hdfs(?)
-        # - support exist_ok for hdfs(?)
         _mkdir(name, **kwargs)
     else:
         os.makedirs(name, mode=mode, exist_ok=exist_ok)

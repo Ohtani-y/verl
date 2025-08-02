@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Trajectory tracker can be inserted into code to save the intermediate results.
-The results will be dump to hdfs for offline comparison.
-Each process will have a client that first move all the tensors to CPU
+軌跡トラッカーはコードに挿入して中間結果を保存できます。
+結果はオフライン比較のためにhdfsにダンプされます。
+各プロセスは最初にすべてのテンソルをCPUに移動するクライアントを持ちます
 """
 
 import io
@@ -37,7 +37,6 @@ def save_to_hdfs(data: io.BytesIO, name, hdfs_dir, verbose):
         local_filepath = os.path.join(tmpdirname, filename)
         with open(local_filepath, "wb") as f:
             f.write(data.getbuffer())
-        # upload to hdfs
 
         if verbose:
             print(f"Saving {local_filepath} to {hdfs_dir}")
@@ -57,7 +56,6 @@ class TrajectoryTracker:
         self.handle = deque()
 
     def dump(self, data: io.BytesIO, name):
-        # get a temp file and write to it
         self.handle.append(save_to_hdfs.remote(data, name, self.hdfs_dir, self.verbose))
 
     def wait_for_hdfs(self):
@@ -87,7 +85,6 @@ def get_trajectory_tracker():
 
 
 if __name__ == "__main__":
-    # testing
     os.environ["VERL_ENABLE_TRACKER"] = "1"
     os.environ["VERL_TRACKER_HDFS_DIR"] = "~/debug/test"
 

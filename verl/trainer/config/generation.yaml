@@ -17,12 +17,11 @@ rollout:
   name: vllm
   mode: sync # sync: LLM, async: AsyncLLM
   temperature: 1.0
-  top_k: 50 # 0 for hf rollout, -1 for vllm rollout
+  top_k: 50 # hf rollout では 0、vllm rollout では -1
   top_p: 0.7
   prompt_length: 1536
   response_length: 512
-  # for vllm rollout
-  dtype: bfloat16 # should align with FSDP
+  dtype: bfloat16 # FSDP と合わせる必要がある
   gpu_memory_utilization: 0.5
   ignore_eos: False
   enforce_eager: True
@@ -32,24 +31,22 @@ rollout:
   max_num_batched_tokens: 8192
   max_model_len: null
   max_num_seqs: 1024
-  log_prob_micro_batch_size: null # will be deprecated, use log_prob_micro_batch_size_per_gpu
+  log_prob_micro_batch_size: null # 廃止予定、log_prob_micro_batch_size_per_gpu を使用
   log_prob_micro_batch_size_per_gpu: 8
-  # for hf rollout
   do_sample: True
   disable_log_stats: True
   enable_chunked_prefill: True
   n: 1
-  # support logging rollout prob for debugging purpose
   calculate_log_probs: False
 actor:
-  strategy: fsdp  # This is for backward-compatibility
-  ulysses_sequence_parallel_size: 1 # sp size
-  entropy_from_logits_with_chunking: False  # calculate entropy with chunking to reduce memory peak
-  entropy_checkpointing: False  # recompute entropy
+  strategy: fsdp  # 後方互換性のため
+  ulysses_sequence_parallel_size: 1 # シーケンス並列サイズ
+  entropy_from_logits_with_chunking: False  # メモリピークを削減するためチャンキングでエントロピーを計算
+  entropy_checkpointing: False  # エントロピーを再計算
   fsdp_config:
     fsdp_size: -1
-    forward_prefetch: False  # FSDP1 forward_prefetch configuration
+    forward_prefetch: False  # FSDP1 前方プリフェッチ設定
 
 ray_init:
-  num_cpus: null # `None` means using all CPUs, which might cause hang if limited in systems like SLURM. Please set to a number allowed then.
+  num_cpus: null # `None` は全CPUを使用することを意味し、SLURM等の制限されたシステムでハングする可能性がある。許可された数値を設定してください。
   timeline_json_file: null

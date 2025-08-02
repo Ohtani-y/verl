@@ -32,7 +32,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This logic is largely copied from the Hendrycks' MATH release (math_equivalence).
+このロジックは主に Hendrycks の MATH リリース（math_equivalence）からコピーされています。
 
 From: https://github.com/openai/prm800k/blob/main/prm800k/grading/math_normalize.py
 """
@@ -46,7 +46,6 @@ def normalize_answer(answer: Optional[str]) -> Optional[str]:
         return None
     answer = answer.strip()
     try:
-        # Remove enclosing `\text{}`.
         m = re.search("^\\\\text\{(?P<text>.+?)\}$", answer)
         if m is not None:
             answer = m.group("text").strip()
@@ -103,7 +102,7 @@ def _fix_a_slash_b(string):
 
 
 def _remove_right_units(string):
-    # "\\text{ " only ever occurs (at least in the val set) when describing units
+    # "\\text{ " は（少なくとも検証セットでは）単位を記述する場合にのみ発生
     if "\\text{ " in string:
         splits = string.split("\\text{ ")
         assert len(splits) == 2

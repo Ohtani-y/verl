@@ -30,7 +30,6 @@ class QKVParallelLinear(tensor_parallel.ColumnParallelLinear):
         skip_bias_add=False,
         **kwargs,
     ):
-        # Keep input parameters, and already restrict the head numbers
         self.input_size = input_size
         self.q_output_size = num_heads * head_dim
         self.kv_output_size = num_key_value_heads * head_dim
@@ -63,7 +62,6 @@ class MergedColumnParallelLinear(tensor_parallel.ColumnParallelLinear):
         skip_bias_add=False,
         **kwargs,
     ):
-        # Keep input parameters, and already restrict the head numbers
         self.input_size = input_size
         self.output_size = gate_ouput_size + up_output_size
         self.gather_output = gather_output

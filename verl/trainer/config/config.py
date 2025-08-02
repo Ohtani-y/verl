@@ -22,15 +22,15 @@ __all__ = ["CheckpointConfig", "ProfileConfig", "BaseModelConfig"]
 
 @dataclass
 class CheckpointConfig(BaseConfig):
-    """Configuration for model checkpointing.
+    """モデルチェックポイントの設定。
 
-    The inheritance from BaseConfig provides omegaconf.DictConfig-like interface for a dataclass config.
+    BaseConfig からの継承により、dataclass 設定に omegaconf.DictConfig のようなインターフェースを提供します。
 
     Args:
-        save_contents (list[str]): What to include in saved checkpoints.
-            Options: 'model', 'optimizer', 'extra', 'hf_model'.
-        load_contents (list[str]): Contents to load from checkpoint. Defaults to same as save_contents.
-        async_save (bool): Whether to save checkpoints asynchronously. Only implemented for Megatron as of now.
+        save_contents (list[str]): 保存されるチェックポイントに含める内容。
+            オプション: 'model', 'optimizer', 'extra', 'hf_model'。
+        load_contents (list[str]): チェックポイントから読み込む内容。デフォルトは save_contents と同じ。
+        async_save (bool): チェックポイントを非同期で保存するかどうか。現在は Megatron でのみ実装されています。
     """
 
     save_contents: list[str] = field(default_factory=lambda: ["model", "optimizer", "extra"])
@@ -40,16 +40,16 @@ class CheckpointConfig(BaseConfig):
 
 @dataclass
 class ProfileConfig(BaseConfig):
-    """Configuration for profiling.
+    """プロファイリングの設定。
 
-    The inheritance from BaseConfig provides omegaconf.DictConfig-like interface for a dataclass config.
+    BaseConfig からの継承により、dataclass 設定に omegaconf.DictConfig のようなインターフェースを提供します。
 
     Args:
-        use_profile (bool): Whether to enable profiling.
-        profile_ranks (Optional[list[int]]): List of ranks to profile. None means all ranks.
-        step_start (int): Starting step for profiling.
-        step_end (int): Ending step for profiling.
-        save_path (Optional[str]): Path to save profiling results.
+        use_profile (bool): プロファイリングを有効にするかどうか。
+        profile_ranks (Optional[list[int]]): プロファイリングするランクのリスト。None は全ランクを意味します。
+        step_start (int): プロファイリングの開始ステップ。
+        step_end (int): プロファイリングの終了ステップ。
+        save_path (Optional[str]): プロファイリング結果を保存するパス。
     """
 
     use_profile: bool = False
@@ -61,15 +61,15 @@ class ProfileConfig(BaseConfig):
 
 @dataclass
 class BaseModelConfig(BaseConfig):
-    """Base configuration for a model.
-    Contains core settings for loading and initializing a pretrained model checkpoint.
+    """モデルの基本設定。
+    事前訓練されたモデルチェックポイントの読み込みと初期化のためのコア設定を含みます。
 
     Args:
-        path (str): Path to pretrained model weights.
-        tokenizer_path (Optional[str]): Tokenizer path (defaults to actor's model path if not set).
-        override_config (dict): Hugging Face config override.
-        external_lib (Optional[str]): External model implementation (optional).
-        trust_remote_code (bool): Whether to trust remote code from Hugging Face models.
+        path (str): 事前訓練されたモデル重みへのパス。
+        tokenizer_path (Optional[str]): トークナイザーのパス（設定されていない場合は actor のモデルパスがデフォルト）。
+        override_config (dict): Hugging Face 設定のオーバーライド。
+        external_lib (Optional[str]): 外部モデル実装（オプション）。
+        trust_remote_code (bool): Hugging Face モデルからのリモートコードを信頼するかどうか。
     """
 
     path: str = "~/models/deepseek-llm-7b-chat"

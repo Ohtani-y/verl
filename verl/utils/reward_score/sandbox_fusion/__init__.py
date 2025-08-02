@@ -18,9 +18,9 @@ import traceback
 from .utils import check_correctness
 
 """
-Verify code correctness using the Sandbox Fusion (https://github.com/bytedance/SandboxFusion).
-You can either deploy the sandbox_fusion service yourself or use the
-FaaS service provided by public cloud, eg: volcengine.com.
+Sandbox Fusion (https://github.com/bytedance/SandboxFusion) を使用してコードの正確性を検証します。
+sandbox_fusion サービスを自分でデプロイするか、
+パブリッククラウドが提供する FaaS サービス（例：volcengine.com）を使用できます。
 """
 logger = logging.getLogger(__name__)
 
@@ -29,33 +29,31 @@ def compute_score(
     sandbox_fusion_url, concurrent_semaphore, memory_limit_mb, completion, test_cases, continuous=False, timeout=10
 ):
     """
-    Computes the code score using the remote sandbox API.
+    リモート sandbox API を使用してコードスコアを計算します。
 
     Args:
-        sandbox_fusion_url: The URL of the sandbox_fusion service, eg: "https://<your service endpoint>/run_code"
+        sandbox_fusion_url: sandbox_fusion サービスの URL、例："https://<your service endpoint>/run_code"
 
-        completion: The completion string containing the code.
-        test_cases: JSON string or dictionary containing "inputs" and "outputs".
-        continuous: Whether to compute a continuous score (based on the first N test cases).
-        timeout: Timeout for each test case.
+        completion: コードを含む完了文字列。
+        test_cases: "inputs" と "outputs" を含む JSON 文字列または辞書。
+        continuous: 連続スコアを計算するかどうか（最初の N 個のテストケースに基づく）。
+        timeout: 各テストケースのタイムアウト。
 
     Returns:
-        A tuple (score, metadata_list).
-        score: Float score (0.0 to 1.0).
-        metadata_list: List containing execution metadata for each test case.
+        タプル (score, metadata_list)。
+        score: 浮動小数点スコア（0.0 から 1.0）。
+        metadata_list: 各テストケースの実行メタデータを含むリスト。
     """
     solution = completion
     if "```python" in completion:
         solution = completion.split("```python")[-1].split("```")[0]
     elif "```" in completion:
-        # Handle cases like ```\ncode\n```
         parts = completion.split("```")
         if len(parts) >= 2:
             solution = parts[1]
-            # Remove potential language specifier like 'python\n'
             if "\n" in solution:
                 first_line, rest = solution.split("\n", 1)
-                if first_line.strip().isalpha():  # Simple check for language name
+                if first_line.strip().isalpha():  # 言語名の簡単なチェック
                     solution = rest
     else:
         return 0.0, [{"error": "Invalid completion (missing code block)"}]
@@ -76,10 +74,7 @@ def compute_score(
             logger.error("Invalid test_cases structure.")
             return 0.0, [{"error": "Invalid test_cases structure (missing inputs/outputs)"}]
 
-        # Check all test cases
-        # Note: The return value of check_correctness might need adaptation here
-        # Assume check_correctness returns (results_list, metadata_list)
-        # results_list contains True, False, or error codes (-1, -2, -3, etc.)
+        # results_list には True、False、またはエラーコード（-1、-2、-3 など）が含まれます
         res_list, metadata_list = check_correctness(
             sandbox_fusion_url=sandbox_fusion_url,
             in_outs=test_cases,
@@ -89,12 +84,10 @@ def compute_score(
             memory_limit_mb=memory_limit_mb,
         )
 
-        # Calculate score
-        if not res_list:  # If there are no results (e.g., invalid input)
+        if not res_list:  # 結果がない場合（例：無効な入力）
             return 0.0, metadata_list
 
         if continuous:
-            # Calculate pass rate for the first N (e.g., 10) test cases
             num_to_consider = min(len(res_list), 10)
             if num_to_consider == 0:
                 score = 0.0

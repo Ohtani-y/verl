@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# use mcore transformer config to initialize the model
 from abc import ABC, abstractmethod
 
 from megatron.core.models.gpt.gpt_layer_specs import get_gpt_decoder_block_spec, get_gpt_mtp_block_spec
@@ -24,7 +23,7 @@ from .config_converter import PretrainedConfig, TransformerConfig
 
 
 class BaseModelInitializer(ABC):
-    """Base class for model initializers."""
+    """モデル初期化器の基底クラス。"""
 
     def __init__(self, tfconfig: TransformerConfig, hf_config: PretrainedConfig):
         self.tfconfig = tfconfig
@@ -32,16 +31,16 @@ class BaseModelInitializer(ABC):
 
     @abstractmethod
     def get_transformer_layer_spec(self):
-        """Get the transformer layer specification.
+        """transformer レイヤー仕様を取得する。
         https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/models/gpt/gpt_layer_specs.py"""
         pass
 
     def get_rope_scaling_args(self) -> dict:
-        """Get rope scaling args."""
+        """rope スケーリング引数を取得する。"""
         rope_scaling_args = {}
         if "rope_scaling" in self.hf_config:
             if self.hf_config.rope_scaling is not None:
-                # assert self.hf_config.rope_scaling["type"] == "linear", "only linear scaling is supported for now"
+                # assert self.hf_config.rope_scaling["type"] == "linear", "現在は線形スケーリングのみサポート"
                 rope_scaling_args["seq_len_interpolation_factor"] = self.hf_config.rope_scaling["factor"]
         return rope_scaling_args
 
@@ -53,17 +52,17 @@ class BaseModelInitializer(ABC):
         value: bool = False,
         **extra_kwargs,
     ) -> GPTModel:
-        """Initialize a GPT model with the given configuration.
+        """指定された設定で GPT モデルを初期化する。
         https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/models/gpt/gpt_model.py
 
         Args:
-            pre_process (bool): include embedding layer.
-            post_process (bool): including an output layer.
-            share_embeddings_and_output_weights (bool): input embeddings and output logit weights are shared.
-            value (bool): add an extra linear layer for classification or regression.
+            pre_process (bool): 埋め込みレイヤーを含める。
+            post_process (bool): 出力レイヤーを含める。
+            share_embeddings_and_output_weights (bool): 入力埋め込みと出力ロジット重みを共有する。
+            value (bool): 分類または回帰用の追加線形レイヤーを追加する。
 
         Returns:
-            GPTModel: An initialized GPT model instance
+            GPTModel: 初期化された GPT モデルインスタンス
         """
         transformer_layer_spec = self.get_transformer_layer_spec()
         rope_scaling_args = self.get_rope_scaling_args()
@@ -93,21 +92,20 @@ class BaseModelInitializer(ABC):
 
 
 class DenseModel(BaseModelInitializer):
-    """Initializer for dense models like Llama and Qwen2."""
+    """Llama や Qwen2 などの密なモデル用の初期化器。"""
 
     def get_transformer_layer_spec(self):
-        assert self.tfconfig.normalization == "RMSNorm", "only RMSNorm is supported for now"
+        assert self.tfconfig.normalization == "RMSNorm", "現在は RMSNorm のみサポート"
         return get_gpt_decoder_block_spec(self.tfconfig, use_transformer_engine=True)
 
 
 class Qwen2MoEModel(BaseModelInitializer):
-    """Initializer for Qwen2 MoE models."""
+    """Qwen2 MoE モデル用の初期化器。"""
 
     def get_transformer_layer_spec(self):
-        assert self.tfconfig.normalization == "RMSNorm", "only RMSNorm is supported for now"
+        assert self.tfconfig.normalization == "RMSNorm", "現在は RMSNorm のみサポート"
         transformer_layer_spec = get_gpt_decoder_block_spec(self.tfconfig, use_transformer_engine=True)
 
-        # Patch layer spec for shared experts
         for i in range(len(transformer_layer_spec.layer_specs)):
             transformer_layer_spec.layer_specs[i].submodules.mlp.submodules.shared_experts.params["gate"] = True
 
@@ -124,10 +122,10 @@ class Qwen2MoEModel(BaseModelInitializer):
 
 
 class MixtralModel(BaseModelInitializer):
-    """Initializer for Mixtral models."""
+    """Mixtral モデル用の初期化器。"""
 
     def get_transformer_layer_spec(self):
-        assert self.tfconfig.normalization == "RMSNorm", "only RMSNorm is supported for now"
+        assert self.tfconfig.normalization == "RMSNorm", "現在は RMSNorm のみサポート"
         transformer_layer_spec = get_gpt_decoder_block_spec(self.tfconfig, use_transformer_engine=True)
         return transformer_layer_spec
 
@@ -141,10 +139,10 @@ class MixtralModel(BaseModelInitializer):
 
 
 class Qwen3MoEModel(BaseModelInitializer):
-    """Initializer for Qwen3 MoE models."""
+    """Qwen3 MoE モデル用の初期化器。"""
 
     def get_transformer_layer_spec(self):
-        assert self.tfconfig.normalization == "RMSNorm", "only RMSNorm is supported for now"
+        assert self.tfconfig.normalization == "RMSNorm", "現在は RMSNorm のみサポート"
         transformer_layer_spec = get_gpt_decoder_block_spec(self.tfconfig, use_transformer_engine=True)
         return transformer_layer_spec
 
@@ -159,14 +157,14 @@ class Qwen3MoEModel(BaseModelInitializer):
 
 
 class DeepseekV3Model(BaseModelInitializer):
-    """Initializer for DeepseekV3 models."""
+    """DeepseekV3 モデル用の初期化器。"""
 
     def get_transformer_layer_spec(self):
         transformer_layer_spec = get_gpt_decoder_block_spec(self.tfconfig, use_transformer_engine=True)
         return transformer_layer_spec
 
     def get_rope_scaling_args(self) -> dict:
-        """Get rope scaling args."""
+        """rope スケーリング引数を取得する。"""
         rope_scaling_args = {}
         return rope_scaling_args
 
@@ -192,7 +190,7 @@ class DeepseekV3Model(BaseModelInitializer):
 
 
 class Qwen25VLModel(BaseModelInitializer):
-    """Initializer for Qwen2.5 VL models."""
+    """Qwen2.5 VL モデル用の初期化器。"""
 
     def get_transformer_layer_spec(self):
         transformer_layer_spec = get_gpt_decoder_block_spec(self.tfconfig, use_transformer_engine=True)

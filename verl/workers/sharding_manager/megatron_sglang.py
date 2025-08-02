@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains a Megatron style Hybrid Engine that shares the weights of the actor with the inference engine.
+このファイルには、アクターの重みを推論エンジンと共有する Megatron スタイルの Hybrid Engine が含まれています。
 """
 
 import asyncio
@@ -45,35 +45,35 @@ logger.setLevel(os.getenv("VERL_PPO_LOGGING_LEVEL", "WARN"))
 
 """
 Megatron Hybrid Engine:
-- During training, only the current pp stage holds the parameters
-- Before inference, broadcast the parameters of the current pp rank to all other pp ranks (all pp ranks holds all 
-  the parameters)
-- Bind the parameters to the inference engine
-- Do inference in tp. pp is treated as additional dp
-- After inference, all the parameters that doesn't belong to this pp rank is freed.
+- トレーニング中は、現在の pp ステージのみがパラメータを保持
+- 推論前に、現在の pp ランクのパラメータを他のすべての pp ランクにブロードキャスト（すべての pp ランクが
+  すべてのパラメータを保持）
+- パラメータを推論エンジンにバインド
+- tp で推論を実行。pp は追加の dp として扱われる
+- 推論後、この pp ランクに属さないすべてのパラメータが解放される。
 """
 
 
 class MegatronSGLangShardingManager(BaseShardingManager):
-    """A sharding manager for Megatron-style training & inference with SGLang.
+    """SGLang を使用した Megatron スタイルのトレーニングと推論のためのシャーディングマネージャー。
 
-    This class manages the sharding of model parameters between training and inference
-    phases in a Megatron-style parallel setup. It handles:
-    - Loading/offloading parameters between CPU/GPU
-    - Updating inference engine weights
-    - Managing random states for reproducibility
-    - Data preprocessing for distributed inference
+    このクラスは、Megatron スタイルの並列設定におけるトレーニングフェーズと推論フェーズ間での
+    モデルパラメータのシャーディングを管理します。以下を処理します：
+    - CPU/GPU 間でのパラメータのロード/オフロード
+    - 推論エンジンの重みの更新
+    - 再現性のためのランダム状態の管理
+    - 分散推論のためのデータ前処理
 
     Args:
-        actor_module (nn.ModuleList): The actor model modules
-        inference_engine (Engine): The SGLang inference engine
-        model_config: Configuration for the actor's model
-        rollout_config: Configuration for rollout generation
-        transformer_config: Transformer-specific configuration
-        layer_name_mapping: Mapping between layer names and parameters
-        weight_converter: Utility for converting weights between formats
-        device_mesh (DeviceMesh | None): PyTorch device mesh for distributed training
-        offload_param (bool): Whether to offload parameters to CPU when not in use
+        actor_module (nn.ModuleList): アクターモデルのモジュール
+        inference_engine (Engine): SGLang 推論エンジン
+        model_config: アクターモデルの設定
+        rollout_config: ロールアウト生成の設定
+        transformer_config: Transformer 固有の設定
+        layer_name_mapping: レイヤー名とパラメータ間のマッピング
+        weight_converter: 重みフォーマット間の変換ユーティリティ
+        device_mesh (DeviceMesh | None): 分散トレーニング用の PyTorch デバイスメッシュ
+        offload_param (bool): 未使用時にパラメータを CPU にオフロードするかどうか
     """
 
     def __init__(
@@ -105,12 +105,10 @@ class MegatronSGLangShardingManager(BaseShardingManager):
         else:
             self.infer_tp_size = self.inference_engine._tp_size
 
-        # Note that torch_random_states may be different on each dp rank
         self.torch_random_states = get_torch_device().get_rng_state()
-        # get a random rng states
         if self.device_mesh is not None:
             gen_dp_rank = self.device_mesh["dp"].get_local_rank()
-            get_torch_device().manual_seed(gen_dp_rank + 1000)  # make sure all tp ranks have the same random states
+            get_torch_device().manual_seed(gen_dp_rank + 1000)  # すべての tp ランクが同じランダム状態を持つことを確保
             self.gen_random_states = get_torch_device().get_rng_state()
             get_torch_device().set_rng_state(self.torch_random_states)
         else:

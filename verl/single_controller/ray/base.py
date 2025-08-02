@@ -63,19 +63,18 @@ def func_generator(self, method_name, dispatch_fn, collect_fn, execute_fn, block
 
 def sort_placement_group_by_node_ip(pgs: list[PlacementGroup]) -> list[PlacementGroup]:
     """
-    Sort the placement groups by node ip, all bundles in a single placement group should be on the same node.
+    ノード IP によって placement group をソートします。単一の placement group 内のすべてのバンドルは同じノード上にある必要があります。
 
-    FSDPCheckpointManager saves sharded model states and optimizer states in local storage, which requires RANK
-    to be consistent across nodes when resume from checkpoint.
+    FSDPCheckpointManager は分散されたモデル状態とオプティマイザ状態をローカルストレージに保存するため、
+    チェックポイントから復元する際にノード間で RANK が一貫している必要があります。
 
-    With this function, if there's only one resource pool and there's no node change, RANK should be consistent
-    across nodes in multiple ray jobs, even if the whole ray cluster is restarted.
+    この関数により、リソースプールが1つだけでノードの変更がない場合、Ray クラスター全体が再起動されても、
+    複数の Ray ジョブ間でノード間の RANK が一貫性を保つことができます。
     """
     node_ip = {node["NodeID"]: node["NodeManagerAddress"] for node in ray.nodes()}
     pg_ip = {}
     for pg in pgs:
         specs = ray._private.state.state.placement_group_table(pg.id)
-        # all bunles should be on the same node
         node_id = specs["bundles_to_node_id"][0]
         pg_ip[pg.id] = node_ip[node_id]
     return sorted(pgs, key=lambda pg: pg_ip[pg.id])
@@ -93,7 +92,7 @@ class RayResourcePool(ResourcePool):
     ) -> None:
         super().__init__(process_on_nodes, max_colocate_count)
         self.use_gpu = use_gpu
-        # print(f"in RayProcessDispatchConfiguration: name_prefix = {name_prefix}")
+        # print(f"RayProcessDispatchConfiguration 内: name_prefix = {name_prefix}")
         self.name_prefix = get_random_string(length=6) if name_prefix is None else name_prefix
         self.pgs = None
         self.detached = detached
@@ -173,11 +172,10 @@ def merge_resource_pool(rp1: RayResourcePool, rp2: RayResourcePool) -> RayResour
 
 
 class RayClassWithInitArgs(ClassWithInitArgs):
-    """A wrapper class for Ray actors with initialization arguments.
+    """初期化引数を持つ Ray アクターのラッパークラス。
 
-    This class extends ClassWithInitArgs to provide additional functionality for
-    configuring and creating Ray actors with specific resource requirements and
-    scheduling strategies.
+    このクラスは ClassWithInitArgs を拡張して、特定のリソース要件と
+    スケジューリング戦略を持つ Ray アクターの設定と作成のための追加機能を提供します。
     """
 
     def __init__(self, cls, *args, **kwargs) -> None:
@@ -187,18 +185,18 @@ class RayClassWithInitArgs(ClassWithInitArgs):
         self._additional_resource = {}
 
     def set_additional_resource(self, additional_resource):
-        """Set additional resource requirements for the actor.
+        """アクターの追加リソース要件を設定します。
 
         Args:
-            additional_resource: Dictionary specifying additional resource requirements
+            additional_resource: 追加リソース要件を指定する辞書
         """
         self._additional_resource = additional_resource
 
     def update_options(self, options: dict):
-        """Update the Ray actor creation options.
+        """Ray アクター作成オプションを更新します。
 
         Args:
-            options: Dictionary of options to update
+            options: 更新するオプションの辞書
         """
         self._options.update(options)
 

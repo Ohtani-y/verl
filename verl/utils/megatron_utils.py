@@ -14,7 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Pretrain utilities."""
+"""事前トレーニングユーティリティ。"""
 
 import gc
 import os
@@ -52,7 +52,7 @@ def get_model(
     transformer_config=None,
     override_ddp_config=None,
 ):
-    """Build the model."""
+    """モデルを構築します。"""
     # Build model.
     if (
         mpu.get_pipeline_model_parallel_world_size() > 1
@@ -64,7 +64,6 @@ def get_model(
         model = []
         for i in range(mpu.get_virtual_pipeline_model_parallel_world_size()):
             mpu.set_virtual_pipeline_model_parallel_rank(i)
-            # Set pre_process and post_process only after virtual rank is set.
             pre_process = mpu.is_pipeline_first_stage()
             post_process = mpu.is_pipeline_last_stage()
             this_model = model_provider_func(pre_process=pre_process, post_process=post_process)
@@ -98,15 +97,10 @@ def get_model(
     if not isinstance(model, list):
         model = [model]
 
-    # Set tensor model parallel attributes if not set.
-    # Only parameters that are already tensor model parallel have these
-    # attributes set for them. We should make sure the default attributes
-    # are set for all params so the optimizer can use them.
     for model_module in model:
         for param in model_module.parameters():
             tensor_parallel.set_defaults_if_not_set_tensor_model_parallel_attributes(param)
 
-    # Print number of parameters.
     if mpu.get_data_parallel_rank() == 0:
         print(
             " > number of parameters on (tensor, pipeline) model parallel rank ({}, {}): {}".format(
@@ -117,12 +111,10 @@ def get_model(
             flush=True,
         )
 
-    # GPU allocation.
     if transformer_config is None or (not transformer_config.use_cpu_initialization):
         for model_module in model:
             model_module.to(f"{get_device_name()}:{get_device_id()}")
 
-    # Fp16 conversion.
     config: TransformerConfig = get_model_config(model[0])
     config.fp8 = None
     tfconfig: TransformerConfig = model[0].config
@@ -148,7 +140,6 @@ def get_model(
             )
             ddp_models.append(ddp_model)
         model = ddp_models
-        # # Broadcast params from data parallel src rank to other data parallel ranks.
         # # if args.data_parallel_random_init:
         for model_module in model:
             model_module.broadcast_params()
@@ -236,8 +227,6 @@ def mcore_model_parallel_config(
     sequence_parallel: bool,
     params_dtype: torch.dtype,
 ) -> ModelParallelConfig:
-    # WARNING: Code should not reach this point. This function is deprecated and will be removed.
-    # Please use hf_to_mcore_config_dense() from verl.models.mcore.config_converter instead.
     warnings.warn(
         "Code should not reach this point. This function is deprecated and will be removed. Please use "
         "hf_to_mcore_config_dense() from verl.models.mcore.config_converter instead.",
@@ -261,18 +250,17 @@ def mcore_model_parallel_config(
 @torch.no_grad()
 def offload_megatron_model_to_cpu(models):
     """
-    In megatron, the model and optimizer storage are:
-    - bf16 parameter data chunked in model parallel group
-    - fp32 grad chunked in model parallel group
-    - fp32 main_parameter chunked in model and dp group
-    - fp32 optimizer state chunked in model and dp group
+    Megatron では、モデルとオプティマイザのストレージは以下のようになっています：
+    - bf16 パラメータデータはモデル並列グループでチャンク化
+    - fp32 勾配はモデル並列グループでチャンク化
+    - fp32 メインパラメータはモデルと DP グループでチャンク化
+    - fp32 オプティマイザ状態はモデルと DP グループでチャンク化
     """
     for model_chunk in models:
         if isinstance(model_chunk, DDP):
             model_chunk_all_buffers = [model_chunk.buffers, model_chunk.expert_parallel_buffers]
             for buffers in model_chunk_all_buffers:
                 for buffer in buffers:
-                    # offload parameters
                     if buffer.param_data.storage().size() > 0:
                         buffer.param_data.cpu_data = buffer.param_data.data.cpu().pin_memory()
                         buffer.param_data_size = buffer.param_data.storage().size()
@@ -281,7 +269,6 @@ def offload_megatron_model_to_cpu(models):
                     assert buffer.param_data_size == buffer.param_data.cpu_data.storage().size()
 
                     if buffer.grad_data.storage().size() > 0:
-                        # if the grad_data size is already zero, we assume that it is already offloaded
                         buffer.grad_data_size = buffer.grad_data.storage().size()
                         buffer.grad_data.storage().resize_(0)
         else:

@@ -35,7 +35,7 @@ def _get_free_port():
 
 
 class AsyncServerBase(ABC):
-    """Base class for AsyncServer."""
+    """AsyncServer のベースクラス。"""
 
     def __init__(self):
         self.address = ray.util.get_node_ip_address()
@@ -50,8 +50,6 @@ class AsyncServerBase(ABC):
             self.server_ready.set()
             yield
 
-            # There's no way to gracefully restart uvicorn server if port is already in use,
-            # so we exit the process directly and let AsyncLLMServerManager restart it.
             print("FastAPI shutdown, maybe address already in use, exit process immediately.")
             os._exit(-1)
 
@@ -64,19 +62,19 @@ class AsyncServerBase(ABC):
         await server.serve()
 
     async def get_server_address(self) -> tuple[str, int]:
-        """Get FastAPI server address."""
+        """FastAPI サーバーのアドレスを取得する。"""
         await self.server_ready.wait()
         return f"{self.address}:{self.port}"
 
     @abstractmethod
     async def chat_completion(self, raw_request: Request) -> JSONResponse:
-        """OpenAI chat completion API.
+        """OpenAI chat completion API。
 
         Args:
-            raw_request (Request): raw json request
+            raw_request (Request): 生の JSON リクエスト
 
         Returns:
-            JSONResponse: json response
+            JSONResponse: JSON レスポンス
 
         API reference: https://platform.openai.com/docs/api-reference/chat/create
         """
@@ -84,31 +82,31 @@ class AsyncServerBase(ABC):
 
     @abstractmethod
     async def generate(self, prompt_ids: list[int], sampling_params: dict[str, Any], request_id: str) -> list[int]:
-        """Generate response ids given prompt ids.
+        """プロンプト ID から応答 ID を生成する。
 
         Args:
-            prompt_ids (List[int]): prompt ids
-            sampling_params (Dict[str, Any]): sampling params
-            request_id (str): request id
+            prompt_ids (List[int]): プロンプト ID
+            sampling_params (Dict[str, Any]): サンプリングパラメータ
+            request_id (str): リクエスト ID
 
         Returns:
-            List[int]: response ids
+            List[int]: 応答 ID
         """
         raise NotImplementedError
 
     @abstractmethod
     async def init_engine(self):
-        """Init async LLM engine."""
+        """非同期 LLM エンジンを初期化する。"""
         raise NotImplementedError
 
     @abstractmethod
     async def wake_up(self):
-        """Wake up engine to load model weights and build kv cache."""
+        """エンジンを起動してモデルの重みを読み込み、KV キャッシュを構築する。"""
         raise NotImplementedError
 
     @abstractmethod
     async def sleep(self):
-        """Sleep engine to offload model weights and discard kv cache."""
+        """エンジンをスリープしてモデルの重みをオフロードし、KV キャッシュを破棄する。"""
         raise NotImplementedError
 
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contain small torch utilities
+小さな torch ユーティリティを含む
 """
 
 import math
@@ -47,7 +47,7 @@ except ImportError:
 
 
 def gather_from_labels(data, label):
-    """Gather the label from data. The value in label should be [0, vocab_size)
+    """データからラベルを収集する。ラベルの値は [0, vocab_size) の範囲内である必要がある
 
     Args:
         data: (..., vocab_size)
@@ -63,20 +63,20 @@ def gather_from_labels(data, label):
 
 def logprobs_from_logits(logits, labels, inplace_backward=True):
     """
-    Compute per-token log-probabilities for the given labels.
+    指定されたラベルに対するトークンごとの対数確率を計算する。
 
-    Uses a Flash-Attention–based cross-entropy (if available) for efficient backward,
-    otherwise falls back to a standard log-softmax+gather approach.
+    効率的な逆伝播のために Flash-Attention ベースの cross-entropy を使用し（利用可能な場合）、
+    そうでなければ標準的な log-softmax+gather アプローチにフォールバックする。
 
-    See: https://github.com/pytorch/pytorch/issues/563#issuecomment-330103591
+    参照: https://github.com/pytorch/pytorch/issues/563#issuecomment-330103591
 
     Args:
-        logits (Tensor): Model outputs of shape (..., vocab_size).
-        labels (LongTensor): True class indices of shape matching logits[..., :-1].
-        inplace_backward (bool): If True and Flash-Attn is available, perform backward in-place.
+        logits (Tensor): (..., vocab_size) の形状のモデル出力
+        labels (LongTensor): logits[..., :-1] と一致する形状の真のクラスインデックス
+        inplace_backward (bool): True かつ Flash-Attn が利用可能な場合、インプレースで逆伝播を実行
 
     Returns:
-        Tensor: Log-probabilities of the target labels, shape logits.shape[:-1].
+        Tensor: ターゲットラベルの対数確率、形状は logits.shape[:-1]
     """
     if FLAH_ATTN_CROSS_ENTROPY_LOSS_AVAILABLE:
         batch_dim = logits.shape[:-1]
@@ -115,17 +115,16 @@ def logprobs_from_logits_naive(logits, labels):
 
 def logprobs_from_logits_v2(logits: torch.FloatTensor, labels):
     """
-    A memory efficient implementation of logprobs_from_logits
+    logprobs_from_logits のメモリ効率的な実装
     """
     if logits.dtype in [torch.float32, torch.float64]:
         logits_labels = torch.gather(logits, dim=-1, index=labels.unsqueeze(-1)).squeeze(-1)
-        # loop to reduce peak mem consumption
         logsumexp_values = torch.stack([torch.logsumexp(logit, dim=-1) for logit in logits])
         logprobs_labels = logits_labels - logsumexp_values  # log_softmax(x_i) = x_i - logsumexp(x)
     else:
-        # logsumexp approach is unstable with bfloat16, fall back to slightly less efficent approach
+        # logsumexp アプローチは bfloat16 では不安定なため、やや効率の劣るアプローチにフォールバック
         logprobs_labels = []
-        for row_logits, row_labels in zip(logits, labels, strict=True):  # loop to reduce peak mem consumption
+        for row_logits, row_labels in zip(logits, labels, strict=True):  # ピークメモリ消費量を削減するためのループ
             row_logprobs = F.log_softmax(row_logits, dim=-1)
             row_logprobs_labels = row_logprobs.gather(dim=-1, index=row_labels.unsqueeze(-1)).squeeze(-1)
             logprobs_labels.append(row_logprobs_labels)

@@ -13,10 +13,10 @@
 # limitations under the License.
 """
 Megatron Actor.
-In megatron actor, the differences are:
-1. We only make minibatch
+Megatron actor では、以下の違いがあります:
+1. ミニバッチのみを作成します
 
-Note that our model doesn't have to be `MegatronModule` because we don't share embedding in the last layer
+注意: 最後の層で埋め込みを共有しないため、モデルは `MegatronModule` である必要はありません
 """
 
 import itertools

@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Functionality for CPU offloading of tensors saved for backward pass."""
+"""後方パス用に保存されたテンソルの CPU オフロード機能。"""
 
 from __future__ import annotations
 
@@ -52,11 +52,12 @@ class FSDPParameterFilter:
 
 
 class CpuOffloadHookWithOffloadHandler:
-    """Context-manager that offloads/recovers tensors through an offload hander.
+    """オフロードハンドラーを通じてテンソルをオフロード/復元するコンテキストマネージャー。
 
-    The hook just offloads/recovers the tensor object to the handler through `tensor_push`
-    and `tensor_pop` interface. How the offload-handler manages the offloading, recovering
-    or prefetching timing is transparent to this hook.
+    このフックは `tensor_push` と `tensor_pop` インターフェースを通じて
+    テンソルオブジェクトをハンドラーにオフロード/復元するだけです。
+    オフロードハンドラーがオフロード、復元、プリフェッチのタイミングを
+    どのように管理するかは、このフックには透過的です。
     """
 
     def __init__(
@@ -88,20 +89,20 @@ class CpuOffloadHookWithOffloadHandler:
 
 
 class OffloadHandler:
-    """A base class for CPU offload-handler."""
+    """CPU オフロードハンドラーのベースクラス。"""
 
     def __init__(self) -> None:
         pass
 
     def tensor_push(self, tensor: torch.Tensor, **kwargs) -> Any:
-        """Tensor push."""
+        """テンソルをプッシュします。"""
         raise NotImplementedError(
             "`tensor_push is not implented in OffloadHandler class. Inherit this class and implement your "
             "custom tensor_push."
         )
 
     def tensor_pop(self, tensor_tag: Any, **kwargs):
-        """Tensor pop."""
+        """テンソルをポップします。"""
         raise NotImplementedError(
             "`tensor_pop is not implented in OffloadHandler class. Inherit this class and implement your "
             "custom tensor_pop."
@@ -109,10 +110,10 @@ class OffloadHandler:
 
 
 class GroupCommitFunction(torch.autograd.Function):
-    """this is a dummy op with output identical to input.
-    However, it is necessary for marking a timepoint for offload handler to
-    accomplish all synchronizations. Implementing it as a function is necessary
-    because we need to actions in both forward and backward.
+    """入力と同一の出力を持つダミー演算です。
+    しかし、オフロードハンドラーがすべての同期を完了するための
+    タイムポイントをマークするために必要です。関数として実装することが
+    必要なのは、前方と後方の両方でアクションが必要だからです。
     """
 
     @staticmethod
@@ -120,7 +121,6 @@ class GroupCommitFunction(torch.autograd.Function):
         # pylint: disable=missing-function-docstring
         cpu_offload_handler.on_group_commit_forward()
         ctx.cpu_offload_handler = cpu_offload_handler
-        # return the identical tensor
         return tensor
 
     @staticmethod
@@ -135,9 +135,9 @@ group_prefetch_offload_commit = GroupCommitFunction.apply
 
 
 class SynchronizedGroupOffloadHandler(OffloadHandler):
-    """Offload Handler that offloads/reloads in a synchronized way.
-    The device-to-host and host-to-device copying happen in the same stream
-    as the computation kernels, thus the copying will block computation.
+    """同期的な方法でオフロード/リロードを行うオフロードハンドラー。
+    デバイスからホスト、ホストからデバイスへのコピーは、
+    計算カーネルと同じストリームで発生するため、コピーが計算をブロックします。
     """
 
     def __init__(self, num_offload_group, tensor_need_offloading_checker=(lambda _: True)) -> None:
@@ -149,29 +149,24 @@ class SynchronizedGroupOffloadHandler(OffloadHandler):
         self.groupid_reset()
 
     def groupid_reset(self):
-        """Groupid reset."""
-        # Data structures to label saved tensors and book-keep their cpu copies.
-        # Currently, on push, create a new cpu tensor and copies; on pop, copies
-        # the tensor back to gpu and deletes the cpu tensor.
-        # These will increment whenever `group_commit()` is invoked
+        """グループIDをリセットします。"""
         self.current_group, self.tensor_count_current_group = (0, 0)
         self.torch_tensor_count = 0
         self.tensor_tag_to_state = {}
 
     def on_group_commit_forward(self):
-        """On group commit forward."""
-        # finishing up with updating current group and tensor count
-        self.current_group += 1  # increment
-        self.tensor_count_current_group = 0  # reset
+        """グループコミット前方処理時の処理。"""
+        self.current_group += 1  # 増加
+        self.tensor_count_current_group = 0  # リセット
 
     def on_group_commit_backward(self):
-        """On group commit backward."""
+        """グループコミット後方処理時の処理。"""
         self.current_group -= 1
         assert self.current_group >= 0
 
     @staticmethod
     def offload(src_tensor, pin_memory=True):
-        """Offload."""
+        """オフロードを実行します。"""
 
         cpu_backup = torch.empty(
             src_tensor.size(),
@@ -186,15 +181,14 @@ class SynchronizedGroupOffloadHandler(OffloadHandler):
 
     @staticmethod
     def reload(state, non_blocking=None):
-        """Reload."""
+        """リロードを実行します。"""
         dev, cpu_backup = state
         if non_blocking is None:
             non_blocking = cpu_backup.is_pinned()
         return cpu_backup.to(dev, non_blocking=non_blocking)
 
     def tensor_push(self, tensor: torch.Tensor, **kwargs):
-        """Tensor push."""
-        # obtain a unique tensor tag
+        """テンソルをプッシュします。"""
         tensor_tag = (self.current_group, self.tensor_count_current_group)
         self.tensor_count_current_group += 1
         assert tensor_tag not in self.tensor_tag_to_state
@@ -202,7 +196,6 @@ class SynchronizedGroupOffloadHandler(OffloadHandler):
             state = SynchronizedGroupOffloadHandler.offload(tensor)
             self.tensor_tag_to_state[tensor_tag] = state
         else:
-            # will be offloaded together after group commit
             self.tensor_tag_to_state[tensor_tag] = tensor
 
         return tensor_tag

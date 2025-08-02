@@ -42,32 +42,30 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 class AsyncLLMServerManager:
     """
-    A class to manage multiple OpenAI compatible LLM servers. This class provides
-    - Load balance: least requests load balancing
-    - Sticky session: send multi-turn chat completions to same server for automatic prefix caching
+    複数の OpenAI 互換 LLM サーバーを管理するクラス。このクラスは以下を提供します：
+    - 負荷分散: 最少リクエスト負荷分散
+    - スティッキーセッション: 自動プレフィックスキャッシュのため、マルチターンチャット補完を同じサーバーに送信
     """
 
     def __init__(self, config: DictConfig, server_handles: list[ray.actor.ActorHandle], max_cache_size: int = 10000):
-        """Initialize the AsyncLLMServerManager.
+        """AsyncLLMServerManager を初期化します。
 
         Args:
-            config (DictConfig): YAML config.
-            server_handles (List[ray.actor.ActorHandle]): OpenAI compatible LLM server actor handles.
-            max_cache_size (int, optional): max cache size for request_id to server mapping. Defaults to 10000.
+            config (DictConfig): YAML 設定。
+            server_handles (List[ray.actor.ActorHandle]): OpenAI 互換 LLM サーバーアクターハンドル。
+            max_cache_size (int, optional): request_id からサーバーへのマッピングの最大キャッシュサイズ。デフォルトは 10000。
         """
         self.config = config
         self.server_handles = server_handles
         random.shuffle(self.server_handles)
 
-        # Least requests load balancing
         self.weighted_serveres = [[0, (hash(server), server)] for server in server_handles]
         heapq.heapify(self.weighted_serveres)
 
-        # LRU cache to map request_id to server
+        # request_id からサーバーへのマッピング用 LRU キャッシュ
         self.request_id_to_server = LRUCache(maxsize=max_cache_size)
 
     def _choose_server(self, request_id: str) -> ray.actor.ActorHandle:
-        # TODO: implement server pressure awareness load balancing
         if request_id in self.request_id_to_server:
             return self.request_id_to_server[request_id]
 
@@ -85,15 +83,15 @@ class AsyncLLMServerManager:
         prompt_ids: list[int],
         sampling_params: dict[str, Any],
     ) -> list[int]:
-        """Generate tokens from prompt ids.
+        """プロンプト ID からトークンを生成します。
 
         Args:
-            request_id (str): request id for sticky session.
-            prompt_ids (List[int]): List of prompt token ids.
-            sampling_params (Dict[str, Any]): Sampling parameters for the chat completion.
+            request_id (str): スティッキーセッション用のリクエスト ID。
+            prompt_ids (List[int]): プロンプトトークン ID のリスト。
+            sampling_params (Dict[str, Any]): チャット補完のサンプリングパラメータ。
 
         Returns:
-            List[int]: List of generated token ids.
+            List[int]: 生成されたトークン ID のリスト。
         """
         server = self._choose_server(request_id)
         output = await server.generate.remote(
@@ -105,7 +103,7 @@ class AsyncLLMServerManager:
 
 
 class AgentLoopMetrics(BaseModel):
-    """Agent loop performance metrics."""
+    """エージェントループのパフォーマンスメトリクス。"""
 
     generate_sequences: float = 0.0
     tool_calls: float = 0.0

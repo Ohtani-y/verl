@@ -1,6 +1,6 @@
 <div align="center">
- 👋 Hi, everyone! 
-    verl is a RL training library initiated by <b>ByteDance Seed team</b> and maintained by the verl community.
+ 👋 皆さん、こんにちは！ 
+    verl は <b>ByteDance Seed チーム</b>によって開始され、verl コミュニティによって維持されている RL トレーニングライブラリです。
     <br>
     <br>
 </div>
@@ -21,36 +21,36 @@
 
 <h1 style="text-align: center;">verl: Volcano Engine Reinforcement Learning for LLMs</h1>
 
-verl is a flexible, efficient and production-ready RL training library for large language models (LLMs).
+verl は大規模言語モデル（LLM）のための柔軟で効率的、本格運用対応の RL トレーニングライブラリです。
 
-verl is the open-source version of **[HybridFlow: A Flexible and Efficient RLHF Framework](https://arxiv.org/abs/2409.19256v2)** paper.
+verl は **[HybridFlow: A Flexible and Efficient RLHF Framework](https://arxiv.org/abs/2409.19256v2)** 論文のオープンソース版です。
 
-verl is flexible and easy to use with:
+verl は柔軟で使いやすく、以下の特徴があります：
 
-- **Easy extension of diverse RL algorithms**: The hybrid-controller programming model enables flexible representation and efficient execution of complex post-training dataflows. Build RL dataflows such as GRPO, PPO in a few lines of code.
+- **多様な RL アルゴリズムの簡単な拡張**: ハイブリッドコントローラープログラミングモデルにより、複雑なポストトレーニングデータフローの柔軟な表現と効率的な実行が可能。GRPO、PPO などの RL データフローを数行のコードで構築できます。
 
-- **Seamless integration of existing LLM infra with modular APIs**: Decouples computation and data dependencies, enabling seamless integration with existing LLM frameworks, such as FSDP, Megatron-LM, vLLM, SGLang, etc
+- **既存 LLM インフラとのモジュラー API によるシームレスな統合**: 計算とデータの依存関係を分離し、FSDP、Megatron-LM、vLLM、SGLang などの既存 LLM フレームワークとのシームレスな統合を実現
 
-- **Flexible device mapping**: Supports various placement of models onto different sets of GPUs for efficient resource utilization and scalability across different cluster sizes.
+- **柔軟なデバイスマッピング**: 効率的なリソース利用と異なるクラスターサイズでのスケーラビリティのため、モデルを異なる GPU セットに配置することをサポート
 
-- Ready integration with popular HuggingFace models
+- 人気の HuggingFace モデルとの即座の統合
 
-verl is fast with:
+verl は高速で、以下の特徴があります：
 
-- **State-of-the-art throughput**: SOTA LLM training and inference engine integrations and SOTA RL throughput.
+- **最先端のスループット**: SOTA LLM トレーニングと推論エンジンの統合、および SOTA RL スループット
 
-- **Efficient actor model resharding with 3D-HybridEngine**: Eliminates memory redundancy and significantly reduces communication overhead during transitions between training and generation phases.
+- **3D-HybridEngine による効率的なアクターモデル再分散**: メモリ冗長性を排除し、トレーニングと生成フェーズ間の遷移時の通信オーバーヘッドを大幅に削減
 
 </p>
 
-## News
-- [2025/07] The [ReTool](https://arxiv.org/pdf/2504.11536) recipe is fully open sourced. [Blog](https://www.notion.so/verl-reTool-recipe-Using-multi-round-conversations-and-code-sandboxing-to-improve-the-math-of-large-23a8b5b7feba80b386b2e5b5e3c1cde0)
-- [2025/07] The first verl meetup will be held at ICML Vancouver on July 16th! Please [join us](https://lu.ma/0ek2nyao) if you are at ICML! (onsite only)
-- [2025/07] verl keynote at [AWS AI Hours Singapore](https://pages.awscloud.com/aws-ai-hours-sg.html#agenda) on 7/8, verl & verl-agent project updates at [Agent for SWE meetup](https://lu.ma/e498qhsi) by LF AI & Data Singapore on 7/11.
-- [2025/06] verl with Megatron backend enables large MoE models such as [DeepSeek-671b and Qwen3-236b](https://verl.readthedocs.io/en/latest/perf/dpsk.html).
-- [2025/06] verl team will provide latest project updates at [PyTorch Day China](https://www.lfasiallc.com/pytorch-day-china/) on June 7th. Meet our dev team in Beijing!
-- [2025/04] [Seed-Thinking-v1.5](https://github.com/ByteDance-Seed/Seed-Thinking-v1.5/blob/main/seed-thinking-v1.5.pdf) tech report is released! Trained with verl, Seed-Thinking-v1.5 achieves 86.7 on AIME 2024, 55.0 on Codeforces and 77.3 on GPQA, demonstrating excellent reasoning abilities in STEM and coding. Beyond reasoning tasks, the method demonstrates notable generalization across diverse domains.
-- [2025/03] [DAPO](https://dapo-sia.github.io/) is the open-sourced SOTA RL algorithm that achieves 50 points on AIME 2024 based on the Qwen2.5-32B pre-trained model, surpassing the previous SOTA achieved by DeepSeek's GRPO (DeepSeek-R1-Zero-Qwen-32B). DAPO's training is fully powered by verl and the reproduction code is available in `recipe/dapo` now.
+## ニュース
+- [2025/07] [ReTool](https://arxiv.org/pdf/2504.11536) レシピが完全にオープンソース化されました。[ブログ](https://www.notion.so/verl-reTool-recipe-Using-multi-round-conversations-and-code-sandboxing-to-improve-the-math-of-large-23a8b5b7feba80b386b2e5b5e3c1cde0)
+- [2025/07] 初回 verl ミートアップが 7月16日に ICML Vancouver で開催されます！ICML にご参加の方は[ぜひお越しください](https://lu.ma/0ek2nyao)！（現地参加のみ）
+- [2025/07] 7/8 の [AWS AI Hours Singapore](https://pages.awscloud.com/aws-ai-hours-sg.html#agenda) での verl 基調講演、7/11 の LF AI & Data Singapore による [Agent for SWE meetup](https://lu.ma/e498qhsi) での verl & verl-agent プロジェクトアップデート
+- [2025/06] Megatron バックエンドを使用した verl により、[DeepSeek-671b や Qwen3-236b](https://verl.readthedocs.io/en/latest/perf/dpsk.html) などの大規模 MoE モデルが利用可能になりました
+- [2025/06] verl チームが 6月7日の [PyTorch Day China](https://www.lfasiallc.com/pytorch-day-china/) で最新のプロジェクトアップデートを提供します。北京で開発チームにお会いしましょう！
+- [2025/04] [Seed-Thinking-v1.5](https://github.com/ByteDance-Seed/Seed-Thinking-v1.5/blob/main/seed-thinking-v1.5.pdf) 技術レポートがリリースされました！verl でトレーニングされた Seed-Thinking-v1.5 は、AIME 2024 で 86.7、Codeforces で 55.0、GPQA で 77.3 を達成し、STEM とコーディングにおける優れた推論能力を実証しています。推論タスクを超えて、この手法は多様な領域での顕著な汎化を示しています。
+- [2025/03] [DAPO](https://dapo-sia.github.io/) は、Qwen2.5-32B 事前トレーニングモデルに基づいて AIME 2024 で 50 ポイントを達成し、DeepSeek の GRPO（DeepSeek-R1-Zero-Qwen-32B）による以前の SOTA を上回るオープンソース SOTA RL アルゴリズムです。DAPO のトレーニングは完全に verl によって支えられており、再現コードは現在 `recipe/dapo` で利用可能です。
 <details><summary> more... </summary>
 <ul>
   <li> [2025/04] [VAPO](https://arxiv.org/pdf/2504.05118) (value-based augmented PPO) paper covers our latest RL method for reasoning models. Trained from Qwen-32B-base model, VAPO achieves 60.4 on AIME 2024, outperforming DAPO-32B.</li>
@@ -71,21 +71,21 @@ verl is fast with:
 </ul>   
 </details>
 
-## Key Features
+## 主な機能
 
-- **FSDP**, **FSDP2** and **Megatron-LM** for training.
-- **vLLM**, **SGLang** and **HF Transformers** for rollout generation.
-- Compatible with Hugging Face Transformers and Modelscope Hub: [Qwen-3](https://github.com/volcengine/verl/blob/main/examples/grpo_trainer/run_qwen3-8b.sh), Qwen-2.5, Llama3.1, Gemma2, DeepSeek-LLM, etc
-- Supervised fine-tuning.
-- Reinforcement learning with [PPO](examples/ppo_trainer/), [GRPO](examples/grpo_trainer/), [ReMax](examples/remax_trainer/), [REINFORCE++](https://verl.readthedocs.io/en/latest/examples/config.html#algorithm), [RLOO](examples/rloo_trainer/), [PRIME](recipe/prime/), [DAPO](recipe/dapo/), [DrGRPO](recipe/drgrpo), [KL_Cov & Clip_Cov](recipe/entropy) etc.
-  - Support model-based reward and function-based reward (verifiable reward) for math, [coding](https://github.com/volcengine/verl/tree/main/recipe/dapo), etc
-  - Support vision-language models (VLMs) and [multi-modal RL](examples/grpo_trainer/run_qwen2_5_vl-7b.sh) with Qwen2.5-vl, Kimi-VL
-  - [Multi-turn with tool calling](https://github.com/volcengine/verl/tree/main/examples/sglang_multiturn)
-- LLM alignment recipes such as [Self-play preference optimization (SPPO)](https://github.com/volcengine/verl/tree/main/recipe/sppo)
-- Flash attention 2, [sequence packing](examples/ppo_trainer/run_qwen2-7b_seq_balance.sh), [sequence parallelism](examples/ppo_trainer/run_deepseek7b_llm_sp2.sh) support via DeepSpeed Ulysses, [LoRA](examples/sft/gsm8k/run_qwen_05_peft.sh), [Liger-kernel](examples/sft/gsm8k/run_qwen_05_sp2_liger.sh).
-- Scales up to 671B models and hundreds of GPUs with [expert parallelism](https://github.com/volcengine/verl/pull/1467)
-- Multi-gpu [LoRA RL](https://verl.readthedocs.io/en/latest/advance/ppo_lora.html) support to save memory.
-- Experiment tracking with wandb, swanlab, mlflow and tensorboard.
+- トレーニング用の **FSDP**、**FSDP2**、**Megatron-LM**
+- ロールアウト生成用の **vLLM**、**SGLang**、**HF Transformers**
+- Hugging Face Transformers と Modelscope Hub との互換性：[Qwen-3](https://github.com/volcengine/verl/blob/main/examples/grpo_trainer/run_qwen3-8b.sh)、Qwen-2.5、Llama3.1、Gemma2、DeepSeek-LLM など
+- 教師ありファインチューニング
+- [PPO](examples/ppo_trainer/)、[GRPO](examples/grpo_trainer/)、[ReMax](examples/remax_trainer/)、[REINFORCE++](https://verl.readthedocs.io/en/latest/examples/config.html#algorithm)、[RLOO](examples/rloo_trainer/)、[PRIME](recipe/prime/)、[DAPO](recipe/dapo/)、[DrGRPO](recipe/drgrpo)、[KL_Cov & Clip_Cov](recipe/entropy) などによる強化学習
+  - 数学、[コーディング](https://github.com/volcengine/verl/tree/main/recipe/dapo) などのモデルベース報酬と関数ベース報酬（検証可能な報酬）をサポート
+  - Qwen2.5-vl、Kimi-VL による視覚言語モデル（VLM）と[マルチモーダル RL](examples/grpo_trainer/run_qwen2_5_vl-7b.sh) をサポート
+  - [ツール呼び出しを伴うマルチターン](https://github.com/volcengine/verl/tree/main/examples/sglang_multiturn)
+- [自己対戦選好最適化（SPPO）](https://github.com/volcengine/verl/tree/main/recipe/sppo) などの LLM アライメントレシピ
+- Flash attention 2、[シーケンスパッキング](examples/ppo_trainer/run_qwen2-7b_seq_balance.sh)、DeepSpeed Ulysses による[シーケンス並列化](examples/ppo_trainer/run_deepseek7b_llm_sp2.sh)、[LoRA](examples/sft/gsm8k/run_qwen_05_peft.sh)、[Liger-kernel](examples/sft/gsm8k/run_qwen_05_sp2_liger.sh) のサポート
+- [エキスパート並列化](https://github.com/volcengine/verl/pull/1467)により 671B モデルと数百の GPU までスケール
+- メモリ節約のためのマルチ GPU [LoRA RL](https://verl.readthedocs.io/en/latest/advance/ppo_lora.html) サポート
+- wandb、swanlab、mlflow、tensorboard による実験追跡
 
 ## Upcoming Features and Changes
 
@@ -96,29 +96,28 @@ verl is fast with:
 - Async and off-policy architecture https://github.com/volcengine/verl/pull/2231
 - List of breaking changes since v0.4 https://github.com/volcengine/verl/discussions/2270
 
-## Getting Started
+## はじめに
 
-<a href="https://verl.readthedocs.io/en/latest/index.html"><b>Documentation</b></a>
+<a href="https://verl.readthedocs.io/en/latest/index.html"><b>ドキュメント</b></a> | <a href="docs_ja/README.md"><b>日本語ドキュメント</b></a>
 
-**Quickstart:**
+**クイックスタート:**
 
-- [Installation](https://verl.readthedocs.io/en/latest/start/install.html)
-- [Quickstart](https://verl.readthedocs.io/en/latest/start/quickstart.html)
-- [Programming Guide](https://verl.readthedocs.io/en/latest/hybrid_flow.html) & [Tech Talk](https://hcqnc.xetlk.com/sl/3vACOK) (in Chinese)
-- [PPO in verl](https://verl.readthedocs.io/en/latest/algo/ppo.html)
-- [GRPO in verl](https://verl.readthedocs.io/en/latest/algo/grpo.html)
+- [インストール](https://verl.readthedocs.io/en/latest/start/install.html) | [日本語版](docs_ja/start/install.md)
+- [クイックスタート](https://verl.readthedocs.io/en/latest/start/quickstart.html) | [日本語版](docs_ja/start/quickstart.md)
+- [プログラミングガイド](https://verl.readthedocs.io/en/latest/hybrid_flow.html) & [技術講演](https://hcqnc.xetlk.com/sl/3vACOK)（中国語）| [日本語版](docs_ja/hybrid_flow.md)
+- [verl での PPO](https://verl.readthedocs.io/en/latest/algo/ppo.html) | [日本語版](docs_ja/algo/ppo.md)
+- [verl での GRPO](https://verl.readthedocs.io/en/latest/algo/grpo.html) | [日本語版](docs_ja/algo/grpo.md)
 
-**Running a PPO example step-by-step:**
+**PPO サンプルのステップバイステップ実行:**
 
+- [ポストトレーニング用データの準備](https://verl.readthedocs.io/en/latest/preparation/prepare_data.html) | [日本語版](docs_ja/preparation/prepare_data.md)
+- [データセット用報酬関数の実装](https://verl.readthedocs.io/en/latest/preparation/reward_function.html) | [日本語版](docs_ja/preparation/reward_function.md)
+- [PPO サンプルアーキテクチャ](https://verl.readthedocs.io/en/latest/examples/ppo_code_architecture.html) | [日本語版](docs_ja/examples/ppo_code_architecture.md)
+- [設定の説明](https://verl.readthedocs.io/en/latest/examples/config.html) | [日本語版](docs_ja/examples/config.md)
 
-- [Prepare Data for Post-Training](https://verl.readthedocs.io/en/latest/preparation/prepare_data.html)
-- [Implement Reward Function for Dataset](https://verl.readthedocs.io/en/latest/preparation/reward_function.html)
-- [PPO Example Architecture](https://verl.readthedocs.io/en/latest/examples/ppo_code_architecture.html)
-- [Config Explanation](https://verl.readthedocs.io/en/latest/examples/config.html)
+**再現可能なアルゴリズムベースライン:**
 
-**Reproducible algorithm baselines:**
-
-- [RL performance on coding, math](https://verl.readthedocs.io/en/latest/algo/baseline.html)
+- [コーディング、数学での RL パフォーマンス](https://verl.readthedocs.io/en/latest/algo/baseline.html) | [日本語版](docs_ja/algo/baseline.md)
 
 **For code explanation and advance usage (extension):**
 
@@ -150,9 +149,9 @@ verl is fast with:
 - [HybridFlow verl 原文浅析](https://github.com/zhaochenyang20/Awesome-ML-SYS-Tutorial/blob/main/rlhf/verl/readme.md)
 - [最高提升 20 倍吞吐量！豆包大模型团队发布全新 RLHF 框架，现已开源！](https://team.doubao.com/en/blog/%E6%9C%80%E9%AB%98%E6%8F%90%E5%8D%8720%E5%80%8D%E5%90%9E%E5%90%90%E9%87%8F-%E8%B1%86%E5%8C%85%E5%A4%A7%E6%A8%A1%E5%9E%8B%E5%9B%A2%E9%98%9F%E5%8F%91%E5%B8%83%E5%85%A8%E6%96%B0-rlhf-%E6%A1%86%E6%9E%B6-%E7%8E%B0%E5%B7%B2%E5%BC%80%E6%BA%90)
 
-## Performance Tuning Guide
+## パフォーマンスチューニングガイド
 
-The performance is essential for on-policy RL algorithm. We have written a detailed [performance tuning guide](https://verl.readthedocs.io/en/latest/perf/perf_tuning.html) to help you optimize performance.
+オンポリシー RL アルゴリズムにとってパフォーマンスは不可欠です。パフォーマンス最適化を支援するため、詳細な[パフォーマンスチューニングガイド](https://verl.readthedocs.io/en/latest/perf/perf_tuning.html)（[日本語版](docs_ja/web_content/performance_tuning_guide.md)）を作成しました。
 
 ## Upgrade to vLLM >= v0.8.2
 
@@ -178,9 +177,9 @@ Furthermore, FSDP2 cpu offloading is compatible with gradient accumulation. You 
 verl now supports FSDP as the training engine (Megatron support coming soon) and both integrates with vLLM and SGLang as inference engines. Please refer to [this document](https://github.com/volcengine/verl/blob/main/docs/amd_tutorial/amd_build_dockerfile_page.rst) for the installation guide and more information, and [this document](https://github.com/volcengine/verl/blob/main/docs/amd_tutorial/amd_vllm_page.rst) for the vLLM performance tuning for ROCm.
 
 
-## Citation and acknowledgement
+## 引用と謝辞
 
-If you find the project helpful, please cite:
+このプロジェクトが役立つと思われる場合は、以下を引用してください：
 
 - [HybridFlow: A Flexible and Efficient RLHF Framework](https://arxiv.org/abs/2409.19256v2)
 - [A Framework for Training Large Language Models for Code Generation via Proximal Policy Optimization](https://i.cs.hku.hk/~cwu/papers/gmsheng-NL2Code24.pdf)
@@ -233,9 +232,9 @@ verl is inspired by the design of Nemo-Aligner, Deepspeed-chat and OpenRLHF. The
 
 and many more awesome work listed in [recipe](recipe/README.md).
 
-## Contribution Guide
+## 貢献ガイド
 
-See [contributions guide](CONTRIBUTING.md)
+[貢献ガイド](CONTRIBUTING.md)（[日本語版](CONTRIBUTING_ja.md)）をご覧ください
 
 ## About [ByteDance Seed Team](https://team.doubao.com/)
 

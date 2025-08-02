@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Utilities to check if packages are available.
-We assume package availability won't change during runtime.
+パッケージが利用可能かどうかをチェックするユーティリティ。
+ランタイム中にパッケージの可用性は変わらないと仮定します。
 """
 
 import importlib
@@ -81,7 +81,7 @@ def import_external_libs(external_libs=None):
 
 
 def load_extern_type(file_path: Optional[str], type_name: Optional[str]) -> type:
-    """Load a external data type based on the file path and type name"""
+    """ファイルパスと型名に基づいて外部データ型を読み込みます"""
     if not file_path:
         return None
 
@@ -94,7 +94,6 @@ def load_extern_type(file_path: Optional[str], type_name: Optional[str]) -> type
     else:
         # file://verl/utils/dataset/rl_dataset
         # file:///path/to/verl/utils/dataset/rl_dataset.py
-        # or without file:// prefix
         if file_path.startswith("file://"):
             file_path = file_path[7:]
 
@@ -115,14 +114,14 @@ def load_extern_type(file_path: Optional[str], type_name: Optional[str]) -> type
 
 
 def _get_qualified_name(func):
-    """Get full qualified name including module and class (if any)."""
+    """モジュールとクラス（存在する場合）を含む完全修飾名を取得します。"""
     module = func.__module__
     qualname = func.__qualname__
     return f"{module}.{qualname}"
 
 
 def deprecated(replacement: str = ""):
-    """Decorator to mark functions or classes as deprecated."""
+    """関数やクラスを非推奨としてマークするデコレータ。"""
 
     def decorator(obj):
         qualified_name = _get_qualified_name(obj)

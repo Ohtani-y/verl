@@ -24,10 +24,10 @@ def preprocess_packed_seqs(
     input_ids: torch.Tensor, attention_mask: torch.Tensor, pre_process: bool = True
 ) -> tuple[torch.Tensor, PackedSeqParams]:
     """
-    Preprocess packed sequences
-    CP splits sequence into CP*2 chunks, and each GPU gets 2 chunks (GPU0 gets first and last chunks, GPU1
-    gets second and second last chunks, and so on), this is for load balancing with causal masking.
-    See https://github.com/NVIDIA/TransformerEngine/issues/1368
+    パックされたシーケンスの前処理
+    CP はシーケンスを CP*2 チャンクに分割し、各 GPU は 2 つのチャンクを取得します（GPU0 は最初と最後のチャンク、GPU1
+    は 2 番目と最後から 2 番目のチャンクを取得、以下同様）。これは causal masking での負荷分散のためです。
+    参照: https://github.com/NVIDIA/TransformerEngine/issues/1368
     """
     batch_size = input_ids.shape[0]
 
@@ -46,14 +46,11 @@ def preprocess_packed_seqs(
     cu_seqlens_padded[1:] = torch.cumsum(seqlens_in_batch_padded, dim=0)
 
     # ----------------------------------------------------------------------------
-    # Move the index information needed in the subsequent loop to the CPU at once,
-    # to avoid frequent .item() calls in the loop that cause D2H synchronization
     # ----------------------------------------------------------------------------
-    seqlens_in_batch_cpu: list[int] = seqlens_in_batch.tolist()  # original valid lengths
-    seqlens_in_batch_padded_cpu: list[int] = seqlens_in_batch_padded.tolist()  # lengths after padding
-    cu_seqlens_padded_cpu: list[int] = cu_seqlens_padded.tolist()  # start positions (after padding)
+    seqlens_in_batch_cpu: list[int] = seqlens_in_batch.tolist()  # 元の有効長
+    seqlens_in_batch_padded_cpu: list[int] = seqlens_in_batch_padded.tolist()  # パディング後の長さ
+    cu_seqlens_padded_cpu: list[int] = cu_seqlens_padded.tolist()  # 開始位置（パディング後）
 
-    # Pure Python int calculation to avoid further synchronization
     max_seqlen_in_batch = max(seqlens_in_batch_padded_cpu)
 
     shape = list(input_ids.shape[1:])
@@ -61,7 +58,6 @@ def preprocess_packed_seqs(
     if pre_process:
         input_ids_rmpad = torch.zeros(shape, dtype=input_ids.dtype, device=input_ids.device)
         for i in range(batch_size):
-            # Use Python int, so no GPU→CPU sync in the loop
             if cp_size <= 1:
                 seqlen = seqlens_in_batch_cpu[i]
                 start_idx = cu_seqlens_padded_cpu[i]
@@ -72,7 +68,6 @@ def preprocess_packed_seqs(
             seqlen = seqlen_padded_i // cp_size
             half_seqlen = seqlen // 2
             start_idx = cu_seqlens_padded_cpu[i] // cp_size
-            # split to 2 chunks
             d = input_ids[i, attention_mask[i]]
             input_ids_rmpad[start_idx : start_idx + half_seqlen] = d[
                 half_seqlen * cp_rank : half_seqlen * (cp_rank + 1)
@@ -111,14 +106,12 @@ def postprocess_packed_seqs(
     post_process: bool = True,
 ) -> torch.Tensor:
     """
-    Postprocess packed sequences
+    パックされたシーケンスの後処理
     """
     if not post_process:
         return output
 
     # -------------------------------------------------------------------------
-    # Move the lengths and offsets needed for subsequent Python-level indexing to the CPU in advance,
-    # to avoid a large number of .item() calls in the loop
     # -------------------------------------------------------------------------
     cu_padded_cpu: list[int] = packed_seq_params.cu_seqlens_q_padded.tolist()
     seq_lens_cpu: list[int] = attention_mask.sum(dim=1, dtype=torch.int32).cpu().tolist()
@@ -127,10 +120,8 @@ def postprocess_packed_seqs(
     output_new = torch.zeros(shape, dtype=output.dtype, device=output.device)
 
     cp_size = mpu.get_context_parallel_world_size()
-    # all gather output across context parallel group
     if cp_size > 1:
         # output shape: [1, packed_len, hidden_dim]
-        # need to gather across cp group and concatenate in sequence dimension
         output_list = [torch.empty_like(output) for _ in range(cp_size)]
         torch.distributed.all_gather(output_list, output.detach(), group=mpu.get_context_parallel_group())
         output_list[mpu.get_context_parallel_rank()] = output
@@ -149,7 +140,6 @@ def postprocess_packed_seqs(
         tmp = torch.empty(s_len_padded, *output.shape[2:], device=output.device)
         for j in range(cp_size):
             o = output_list[j][0]
-            # split to 2 chunks
             packed_start_idx = cu_padded_cpu[i] // cp_size
             o0, o1 = (
                 o[packed_start_idx : packed_start_idx + half_seqlen],

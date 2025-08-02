@@ -35,7 +35,7 @@ BASE_CHAT_HISTORY = [
 
 
 class FinishReasonTypeEnum(str, Enum):
-    """The enum for finish reason type."""
+    """終了理由タイプの列挙型"""
 
     LENGTH = "length"
     STOP = "stop"
@@ -60,7 +60,7 @@ class Message(BaseModel):
 
 
 class AsyncRolloutRequestStateEnum(str, Enum):
-    """The enum for async rollout request state."""
+    """非同期ロールアウトリクエスト状態の列挙型"""
 
     PENDING = "pending"
     RUNNING = "running"
@@ -71,7 +71,7 @@ class AsyncRolloutRequestStateEnum(str, Enum):
 
 
 class TokenizationSanityCheckModeEnum(str, Enum):
-    """The enum for tokenization sanity check mode."""
+    """トークン化健全性チェックモードの列挙型"""
 
     DISABLE = "disable"
     STRICT = "strict"
@@ -79,7 +79,7 @@ class TokenizationSanityCheckModeEnum(str, Enum):
 
 
 class AsyncRolloutRequest(BaseModel):
-    """The data model for async rollout."""
+    """非同期ロールアウトのデータモデル"""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -130,13 +130,12 @@ class AsyncRolloutRequest(BaseModel):
 
         values["messages"] = [Message.model_validate(msg) for msg in messages]
 
-        # If there is no multi_modal_keys, we assume the multi-modal data is image and video.
+        # multi_modal_keysがない場合、マルチモーダルデータは画像と動画であると仮定する
         if not values.get("multi_modal_keys"):
             values["multi_modal_keys"] = ["image", "video"]
         if not values.get("multi_modal_data"):
             values["multi_modal_data"] = {key: [] for key in values["multi_modal_keys"]}
         else:
-            # check if all multi_modal_keys are in multi_modal_data
             for key in values["multi_modal_keys"]:
                 if key not in values["multi_modal_data"]:
                     values["multi_modal_data"][key] = []
@@ -176,14 +175,12 @@ class AsyncRolloutRequest(BaseModel):
                 tokenization_dict_with_prompt["attention_mask"],
             )
             if values["input_ids"].shape[-1] > max_prompt_len:
-                # Only log the warning to avoid truncating in the middle of generation prompt. Consider raising an
-                # error for this case in the future.
                 logger.warning(
                     f"Prompt {values['batch_data_id']} has length {values['input_ids'].shape[-1]} "
                     f"which is greater than max_prompt_len {max_prompt_len} after applied chat template with tools."
                 )
 
-            # Process multi_modal_inputs
+            # multi_modal_inputsを処理
             multi_modal_inputs = tokenization_dict_with_prompt.copy()
             multi_modal_inputs.pop("input_ids", None)
             multi_modal_inputs.pop("attention_mask", None)
@@ -259,7 +256,6 @@ class AsyncRolloutRequest(BaseModel):
         attention_mask: torch.Tensor,
         multi_modal_inputs: Optional[dict[str, torch.Tensor]] = None,
     ) -> torch.Tensor:
-        # special case for qwen2vl
         is_qwen2vl = (
             hasattr(processing_class, "image_processor")
             and "Qwen2VLImageProcessor" in processing_class.image_processor.__class__.__name__
@@ -300,7 +296,7 @@ class AsyncRolloutRequest(BaseModel):
         new_multi_modal_inputs: Optional[dict[str, torch.Tensor]] = None,
     ) -> None:
         """
-        Update the input_ids, attention_mask, position_ids, and loss_mask of the request in additive manner.
+        リクエストのinput_ids、attention_mask、position_ids、loss_maskを追加的に更新する
         """
         self.input_ids = torch.cat([self.input_ids, new_input_ids], dim=-1)
         attention_mask = torch.ones_like(new_input_ids) * int(attention_mask)
@@ -330,7 +326,7 @@ class AsyncRolloutRequest(BaseModel):
 
     def _update_multi_modal_inputs(self, new_multi_modal_inputs: dict[str, torch.Tensor]) -> None:
         """
-        Update the multi_modal_inputs of the request in additive manner.
+        リクエストのmulti_modal_inputsを追加的に更新する
         """
         for key in new_multi_modal_inputs:
             input_tensor = new_multi_modal_inputs[key]
@@ -344,9 +340,9 @@ class AsyncRolloutRequest(BaseModel):
         self, processing_class: PreTrainedTokenizer | PreTrainedTokenizerFast | ProcessorMixin
     ) -> list[int]:
         """
-        Get the generation prompt ids for rollout engine.
+        ロールアウトエンジン用の生成プロンプトIDを取得する
 
-        Because rollout engine(SGLang) requires the ids to be a list, we need to convert the tensor to a list.
+        ロールアウトエンジン（SGLang）はIDをリストで要求するため、テンソルをリストに変換する必要がある
         """
         generation_prompt_ids = (
             None

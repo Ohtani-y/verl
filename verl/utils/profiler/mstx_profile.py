@@ -27,31 +27,31 @@ from .profile import DistProfiler, ProfilerConfig
 
 
 def mark_start_range(message: Optional[str] = None) -> None:
-    """Start a mark range in the profiler.
+    """プロファイラーでマーク範囲を開始します。
 
     Args:
         message (str, optional):
-            The message to be displayed in the profiler. Defaults to None.
+            プロファイラーに表示されるメッセージ。デフォルトは None。
     """
     return mstx.range_start(message=message)
 
 
 def mark_end_range(range_id: str) -> None:
-    """End a mark range in the profiler.
+    """プロファイラーでマーク範囲を終了します。
 
     Args:
         range_id (str):
-            The id of the mark range to end.
+            終了するマーク範囲の ID。
     """
     return mstx.range_end(range_id)
 
 
 def mark_annotate(message: Optional[str] = None) -> Callable:
-    """Decorate a function to annotate a mark range along with the function life cycle.
+    """関数のライフサイクルに沿ってマーク範囲を注釈する関数デコレーター。
 
     Args:
         message (str, optional):
-            The message to be displayed in the profiler. Defaults to None.
+            プロファイラーに表示されるメッセージ。デフォルトは None。
     """
 
     def decorator(func):
@@ -63,17 +63,17 @@ def mark_annotate(message: Optional[str] = None) -> Callable:
 
 @contextmanager
 def marked_timer(name: str, timing_raw: dict[str, float], *args: Any, **kwargs: Any) -> None:
-    """Context manager for timing with MSTX markers.
+    """MSTX マーカーを使用したタイミング測定のコンテキストマネージャー。
 
-    This utility function measures the execution time of code within its context,
-    accumulates the timing information, and adds MSTX markers for profiling.
+    このユーティリティ関数は、コンテキスト内のコードの実行時間を測定し、
+    タイミング情報を蓄積し、プロファイリング用の MSTX マーカーを追加します。
 
     Args:
-        name (str): The name/identifier for this timing measurement.
-        timing_raw (Dict[str, float]): Dictionary to store timing information.
+        name (str): このタイミング測定の名前/識別子。
+        timing_raw (Dict[str, float]): タイミング情報を格納する辞書。
 
     Yields:
-        None: This is a context manager that yields control back to the code block.
+        None: コードブロックに制御を戻すコンテキストマネージャー。
     """
     if args:
         logging.warning(f"Args are not supported in mstx_profile, but received: {args}")
@@ -87,15 +87,15 @@ def marked_timer(name: str, timing_raw: dict[str, float], *args: Any, **kwargs: 
 
 
 def get_npu_profiler(option: DictConfig, role: Optional[str] = None, profile_step: Optional[str] = None):
-    """Generate and return an NPU profiler object.
+    """NPU プロファイラーオブジェクトを生成して返します。
 
     Args:
         option (DictConfig):
-            The options to control npu profiler.
+            NPU プロファイラーを制御するオプション。
         role (str, optional):
-            The role of the current data collection. Defaults to None.
+            現在のデータ収集の役割。デフォルトは None。
         profile_step(str, optional):
-            The current training step. Defaults to None.
+            現在のトレーニングステップ。デフォルトは None。
     """
     if option.level == "level_none":
         profile_level = torch_npu.profiler.ProfilerLevel.Level_none

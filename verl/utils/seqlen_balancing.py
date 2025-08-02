@@ -24,7 +24,7 @@ from verl.utils.device import get_device_name
 
 
 def karmarkar_karp(seqlen_list: list[int], k_partitions: int, equal_size: bool):
-    # see: https://en.wikipedia.org/wiki/Largest_differencing_method
+    # 参照: https://en.wikipedia.org/wiki/Largest_differencing_method
     class Set:
         def __init__(self) -> None:
             self.sum = 0
@@ -49,7 +49,6 @@ def karmarkar_karp(seqlen_list: list[int], k_partitions: int, equal_size: bool):
     class State:
         def __init__(self, items: list[tuple[int, int]], k: int) -> None:
             self.k = k
-            # sets should always be decreasing order
             self.sets = [Set() for _ in range(k)]
             assert len(items) in [1, k], f"{len(items)} not in [1, {k}]"
             for i, (idx, seqlen) in enumerate(items):
@@ -75,9 +74,6 @@ def karmarkar_karp(seqlen_list: list[int], k_partitions: int, equal_size: bool):
             return self.sets[0].sum - self.sets[-1].sum
 
         def __lt__(self, other):
-            # least heap, let the state with largest spread to be popped first,
-            # if the spread is the same, let the state who has the largest set
-            # to be popped first.
             if self.spread != other.spread:
                 return self.spread > other.spread
             return self.sets[0] > other.sets[0]
@@ -113,7 +109,6 @@ def karmarkar_karp(seqlen_list: list[int], k_partitions: int, equal_size: bool):
     while len(states_pq) > 1:
         state0 = heapq.heappop(states_pq)
         state1 = heapq.heappop(states_pq)
-        # merge states
         state0.merge(state1)
         heapq.heappush(states_pq, state0)
 
@@ -149,29 +144,29 @@ def greedy_partition(seqlen_list: list[int], k_partitions: int, equal_size: bool
 
 def get_seqlen_balanced_partitions(seqlen_list: list[int], k_partitions: int, equal_size: bool):
     """
-    Calculates partitions of indices from seqlen_list such that the sum of sequence lengths
-    in each partition is balanced. Uses the Karmarkar-Karp differencing method.
+    各パーティションのシーケンス長の合計がバランスするように、seqlen_listからインデックスの
+    パーティションを計算します。Karmarkar-Karp差分法を使用します。
 
-    This is useful for balancing workload across devices or batches, especially when
-    dealing with variable sequence lengths.
+    これは、特に可変長シーケンスを扱う際に、デバイスやバッチ間でワークロードを
+    バランスするのに有用です。
 
     Args:
-        seqlen_list (List[int]): A list of sequence lengths for each item.
-        k_partitions (int): The desired number of partitions.
-        equal_size (bool): If True, ensures that each partition has the same number of items.
-                           Requires len(seqlen_list) to be divisible by k_partitions.
-                           If False, partitions can have varying numbers of items, focusing
-                           only on balancing the sum of sequence lengths.
+        seqlen_list (List[int]): 各アイテムのシーケンス長のリスト
+        k_partitions (int): 希望するパーティション数
+        equal_size (bool): Trueの場合、各パーティションが同じ数のアイテムを持つことを保証します。
+                           len(seqlen_list)がk_partitionsで割り切れる必要があります。
+                           Falseの場合、パーティションは異なる数のアイテムを持つことができ、
+                           シーケンス長の合計のバランスのみに焦点を当てます。
 
     Returns:
-        List[List[int]]: A list containing k_partitions lists. Each inner list contains the
-                         original indices of the items assigned to that partition. The indices
-                         within each partition list are sorted.
+        List[List[int]]: k_partitionsのリストを含むリスト。各内部リストには、
+                         そのパーティションに割り当てられたアイテムの元のインデックスが含まれます。
+                         各パーティションリスト内のインデックスはソートされています。
 
     Raises:
-        AssertionError: If len(seqlen_list) < k_partitions.
-        AssertionError: If equal_size is True and len(seqlen_list) is not divisible by k_partitions.
-        AssertionError: If any resulting partition is empty.
+        AssertionError: len(seqlen_list) < k_partitionsの場合
+        AssertionError: equal_sizeがTrueでlen(seqlen_list)がk_partitionsで割り切れない場合
+        AssertionError: 結果のパーティションが空の場合
     """
     assert len(seqlen_list) >= k_partitions, f"number of items:[{len(seqlen_list)}] < k_partitions:[{k_partitions}]"
 

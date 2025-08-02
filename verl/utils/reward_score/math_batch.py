@@ -17,8 +17,8 @@ from .math import compute_score
 
 def compute_score_batched(data_sources, solution_strs, ground_truths, extra_infos):
     """
-    This is a demonstration of how the batched reward function should look like.
-    Typically, you want to use batched reward to speed up the process with parallelization
+    バッチ化された報酬関数の実装例です。
+    通常、並列化によってプロセスを高速化するためにバッチ化された報酬を使用します。
     """
     return [
         compute_score(solution_str, ground_truth)

@@ -31,7 +31,7 @@ def gptmodel_forward(
     logits_processor_args: dict = None,
     **kwargs,
 ):
-    """Default forward pass for GPT models with optional sequence packing."""
+    """オプションのシーケンスパッキングを使用したGPTモデルのデフォルト順伝播"""
     pre_process = unwrap_model(model).pre_process
     post_process = unwrap_model(model).post_process
     if pack_seqs:

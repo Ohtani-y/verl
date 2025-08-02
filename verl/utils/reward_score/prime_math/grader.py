@@ -86,7 +86,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This logic is largely copied from the Hendrycks' MATH release (math_equivalence), and borrowed from:
+このロジックは主に Hendrycks の MATH リリース (math_equivalence) からコピーされ、以下から借用されています:
 - https://github.com/microsoft/ToRA/blob/main/src/eval/grader.py
 - https://github.com/microsoft/ProphetNet/tree/master/CRITIC
 - https://github.com/openai/prm800k
@@ -97,12 +97,10 @@ import math
 import re
 from math import isclose
 
-# sympy related
 from sympy import N, simplify
 from sympy.parsing.latex import parse_latex
 from sympy.parsing.sympy_parser import parse_expr
 
-# verl related
 from verl.utils.py_functional import timeout_limit
 
 
@@ -119,20 +117,16 @@ def is_digit(s):
 
 
 def normalize(answer, pi) -> str:
-    # checking if answer is $<number> and removing $ in that case to compare
     if isinstance(answer, str) and bool(re.match(r"\$\d+(\.\d+)?", answer)):
         return answer[1:]
 
-    # checking if answer is <number>% or <number>\\% and removing %
     if isinstance(answer, str) and (
         bool(re.match(r"^\d+(\.\d+)?%$", answer)) or bool(re.match(r"^\d+(\.\d+)?\\%$", answer))
     ):
         return answer.replace("\\%", "").replace("%", "")
 
-    # handle base
     answer = handle_base(answer)
 
-    # handle pi
     answer = handle_pi(answer, pi)
 
     return answer
@@ -140,7 +134,6 @@ def normalize(answer, pi) -> str:
 
 def handle_base(x) -> str:
     if isinstance(x, str) and "_" in x:
-        # Due to base
         x = x.split("_")[0]
         x = float(x)
         return int(x)
@@ -149,22 +142,16 @@ def handle_base(x) -> str:
 
 def handle_pi(string, pi):
     if isinstance(string, str) and "\pi" in string:
-        # Find the first occurrence of "\pi"
         idx = string.find("\pi")
 
-        # Iterate over the string and find all occurrences of "\pi" with a valid previous character
         while idx != -1:
             if idx > 0 and string[idx - 1].isdigit():
-                # Replace "\pi" with "*math.pi" if the previous character is a digit
                 string = string[:idx] + f"*{pi}" + string[idx + 3 :]
             else:
-                # Replace "\pi" with "1*math.pi" if the previous character is not a digit
                 string = string[:idx] + f"1*{pi}" + string[idx + 3 :]
 
-            # Find the next occurrence of "\pi"
             idx = string.find("\pi", idx + 1)
 
-        # Evaluate the expression using eval() function
         with contextlib.suppress(Exception):
             string = eval(string)
 

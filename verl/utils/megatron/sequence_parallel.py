@@ -27,13 +27,13 @@ def is_sequence_parallel_param(param):
 
 
 def pad_to_sequence_parallel(unpad_tokens: torch.Tensor):
-    """pad the tokens such that the total length is a multiple of sp world size
+    """トークンを sequence parallel world size の倍数になるようにパディングする
 
     Args:
-        unpad_tokens: (total_nnz, ...). Tokens after removing padding
+        unpad_tokens: (total_nnz, ...). パディング除去後のトークン
 
     Returns:
-        the padded tokens: (total_nnz + pad_size,...)
+        パディング済みトークン: (total_nnz + pad_size,...)
 
     """
     total_nnz = unpad_tokens.shape[0]

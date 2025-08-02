@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Offline evaluate the performance of a generated file using reward model and ground truth verifier.
-The input is a parquet file that contains N generated sequences and (optional) the ground truth.
+報酬モデルと正解検証器を使用して生成ファイルの性能をオフライン評価します。
+入力は N 個の生成シーケンスと（オプションの）正解を含む parquet ファイルです。
 
 """
 
@@ -46,23 +46,18 @@ def main(config):
 
     total = len(dataset)
 
-    # Initialize Ray
     if not ray.is_initialized():
         ray.init(num_cpus=config.ray_init.num_cpus)
 
-    # evaluate test_score based on data source
     data_source_reward = defaultdict(list)
     compute_score = get_custom_reward_fn(config)
 
-    # Create remote tasks
     remote_tasks = [
         process_item.remote(compute_score, data_sources[i], responses[i], reward_model_data[i]) for i in range(total)
     ]
 
-    # Process results as they come in
     with tqdm(total=total) as pbar:
         while len(remote_tasks) > 0:
-            # Use ray.wait to get completed tasks
             done_ids, remote_tasks = ray.wait(remote_tasks)
             for result_id in done_ids:
                 data_source, score = ray.get(result_id)

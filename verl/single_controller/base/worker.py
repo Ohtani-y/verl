@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-the class for Worker
+Worker クラス
 """
 
 import os
@@ -60,22 +60,19 @@ class WorkerHelper:
         return self._get_node_ip().strip("[]"), str(self._get_free_port())
 
 
-# we assume that in each WorkerGroup, there is a Master Worker
 class Worker(WorkerHelper):
-    """A distributed worker that handles initialization and configuration for distributed training.
+    """分散トレーニングの初期化と設定を処理する分散ワーカー。
 
-    This class manages worker initialization, configuration, and provides methods for executing
-    distributed operations. It handles communication settings, device configuration, and worker
-    metadata management.
+    このクラスはワーカーの初期化、設定を管理し、分散操作を実行するメソッドを提供します。
+    通信設定、デバイス設定、ワーカーメタデータ管理を処理します。
     """
 
     fused_worker_attr_name = "fused_worker_dict"
 
     def __new__(cls, *args, **kwargs):
-        """Create a new Worker instance with proper initialization based on environment settings."""
+        """環境設定に基づいて適切な初期化を行う新しい Worker インスタンスを作成。"""
         instance = super().__new__(cls)
 
-        # note that here we use int to distinguish
         disable_worker_init = int(os.environ.get("DISABLE_WORKER_INIT", 0))
         if disable_worker_init:
             return instance
@@ -83,20 +80,19 @@ class Worker(WorkerHelper):
         rank = os.environ.get("RANK", None)
         worker_group_prefix = os.environ.get("WG_PREFIX", None)
 
-        # when decorator @ray.remote applies, __new__ will be called while we don't want to apply _configure_before_init
         if None not in [rank, worker_group_prefix] and "ActorClass(" not in cls.__name__:
             instance._configure_before_init(f"{worker_group_prefix}_register_center", int(rank))
 
         return instance
 
     def _configure_before_init(self, register_center_name: str, rank: int):
-        """Configure worker settings before initialization.
+        """初期化前にワーカー設定を構成。
 
         Args:
             register_center_name (str):
-                Name of the register center Ray actor for worker coordination
+                ワーカー調整用の register center Ray actor の名前
             rank (int):
-                Rank of the worker in the distributed setup
+                分散設定におけるワーカーのランク
         """
         assert isinstance(rank, int), f"rank must be int, instead of {type(rank)}"
 
@@ -118,12 +114,11 @@ class Worker(WorkerHelper):
         else:
             self.register_center = ray.get_actor(register_center_name)
 
-        # set worker info for node affinity scheduling
         ray.get(self.register_center.set_worker_info.remote(rank, ray.get_runtime_context().get_node_id()))
 
     @classmethod
     def env_keys(cls):
-        """The keys of the environment variables that are used to configure the Worker."""
+        """Worker の設定に使用される環境変数のキー。"""
         return [
             "WORLD_SIZE",
             "RANK",
@@ -135,14 +130,12 @@ class Worker(WorkerHelper):
         ]
 
     def __init__(self, cuda_visible_devices=None) -> None:
-        """Initialize the worker with environment settings and device configuration.
+        """環境設定とデバイス設定でワーカーを初期化。
 
         Args:
             cuda_visible_devices (str, optional):
-                CUDA visible devices configuration. Defaults to None.
+                CUDA visible devices 設定。デフォルトは None。
         """
-        # construct a meta from environment variable. Note that the import must be inside the class because
-        # it is executed remotely
         import os
 
         self._setup_env_cuda_visible_devices()
@@ -174,11 +167,11 @@ class Worker(WorkerHelper):
         self.fused_worker_dict = {}
 
     def get_fused_worker_by_name(self, worker_name: str):
-        """Get a fused worker by its name.
+        """名前によって fused worker を取得。
 
         Args:
             worker_name (str):
-                Name of the worker to retrieve
+                取得するワーカーの名前
         """
         return self.fused_worker_dict.get(worker_name, None)
 

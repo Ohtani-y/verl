@@ -13,8 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# there is some bug in mcore 0.12, so we need to patch it
-# 1. `get_query_key_value_tensors` in `multi_latent_attention.py` works wrong when packed_seq_params is not None
 
 
 def apply_patch():
@@ -40,16 +38,14 @@ def apply_patch():
         inference_params=None,
     ):
         """
-        Derives `query`, `key` and `value` tensors from `hidden_states`.
+        `hidden_states` から `query`、`key`、`value` テンソルを導出します。
         """
-        # s = sequence length, b = batch size, h = hidden size, n = num attention heads
         # Attention heads [s, b, n*h]
         assert hidden_states.ndim == 3, f"hidden_states should be 3D, [s, b, n*h], got {hidden_states.ndim}D"
 
         inference_context = deprecate_inference_params(inference_context, inference_params)
 
         # =========================================
-        # Prepare RoPE and seqlen related params
         # =========================================
         rotary_seq_len = self.rotary_pos_emb.get_rotary_seq_len(
             inference_context, None, hidden_states, self.config, packed_seq_params
@@ -64,7 +60,7 @@ def apply_patch():
             rotary_pos_emb, mscale = self.rotary_pos_emb(rotary_seq_len)
 
         # =========================================
-        # QKV down projection and layernorm
+        # QKV ダウンプロジェクションと layernorm
         # =========================================
         if self.config.q_lora_rank is not None:
             # if linear_q_down_proj is ColumnParallelLinear:
@@ -73,11 +69,6 @@ def apply_patch():
             #     q_compressed: [s / TP, b, q_lora_rank]
             q_compressed, _ = self.linear_q_down_proj(hidden_states)
 
-            # When output is sharded (ColumnParallelLinear), two things are needed to be
-            # identical to a normal Linear.
-            #   1. Manually gather output to restore output dim q_lora_rank;
-            #   2. Scatter sequence back to s / TP if sequence-parallel since it was
-            #      gathered by ColumnParallelLinear.
             if q_compressed.size(-1) != self.config.q_lora_rank:
                 q_compressed = gather_from_tensor_model_parallel_region(q_compressed)
                 if self.config.sequence_parallel:
@@ -114,7 +105,6 @@ def apply_patch():
         kv_compressed = self.kv_layernorm(kv_compressed)
 
         # =========================================
-        # QKV up projection and RoPE apply
         # =========================================
         def qkv_up_proj_and_rope_apply(q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb):
             if self.config.q_lora_rank is not None:
@@ -140,15 +130,11 @@ def apply_patch():
             )
 
             if inference_context is not None:
-                # add offset to the sequence start for inference
                 sequence_start = inference_context.sequence_len_offset
                 sequence_end = sequence_start + q_len
                 rotary_pos_emb = rotary_pos_emb[sequence_start:sequence_end]
             else:
-                # Shorten rotary_pos_emb to the sequence length when inference_params
-                # is not provided. This makes sure we can run forward directly with
-                # any sequence length. During training, the sequence length is always
-                # the full rotary_pos_emb length.
+                # inference_params が提供されていない場合、rotary_pos_emb をシーケンス長に短縮します。
                 rotary_pos_emb = rotary_pos_emb[0:q_len]
 
             # [s, b, 64] -> [s, b, 1, 64]

@@ -25,7 +25,6 @@ def get_megatron_optimizer(
     scale_lr_cond=None,
     lr_mult=1.0,
 ):
-    # Base optimizer.
     return get_megatron_optimizer_native(
         config=config,
         model_chunks=model,
@@ -40,7 +39,7 @@ def get_megatron_optimizer_param_scheduler(
     config,
 ):
     """
-    Get the optimizer parameter scheduler for Megatron.
+    Megatron用のオプティマイザーパラメータスケジューラーを取得します。
     """
     lr_decay_steps = config.lr_decay_steps
     lr_warmup_steps = config.lr_warmup_steps
@@ -77,6 +76,6 @@ def get_megatron_optimizer_param_scheduler(
 
 def get_megatron_last_lr(optimizer):
     """
-    Get the last learning rate from the optimizer parameter scheduler.
+    オプティマイザーパラメータスケジューラーから最後の学習率を取得します。
     """
     return optimizer.param_groups[0]["lr"]

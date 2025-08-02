@@ -30,21 +30,19 @@ class MegatronEngine(BaseEngine):
 
     def train_mode(self):
         """
-        Context manager entry for switching the engine and model into training mode.
+        エンジンとモデルをトレーニングモードに切り替えるためのコンテキストマネージャーエントリ。
 
-        Usage:
+        使用方法:
             with engine.train_mode():
-                # runs in training mode
         """
         raise NotImplementedError
 
     def eval_mode(self):
         """
-        Context manager entry for switching the engine and model into evaluation mode.
+        エンジンとモデルを評価モードに切り替えるためのコンテキストマネージャーエントリ。
 
-        Usage:
+        使用方法:
             with engine.eval_mode():
-                # runs in evaluation mode
         """
         raise NotImplementedError
 
@@ -54,15 +52,15 @@ class MegatronEngine(BaseEngine):
         post_fn: Callable[[DataProto, torch.Tensor], tuple[torch.Tensor, dict[str, torch.Tensor]]],
     ) -> dict[str, torch.Tensor]:
         """
-        Perform inference on a mini batch of data.
+        データのミニバッチに対して推論を実行する。
 
         Args:
-            data: The input data for inference, typically containing tensors and metadata.
-            post_fn: A post-processing function that takes a micro-batch and predictions as input,
-                     and returns a tuple containing processed predictions and a dictionary of outputs.
+            data: 推論用の入力データ。通常はテンソルとメタデータを含む。
+            post_fn: マイクロバッチと予測を入力として受け取り、
+                     処理済み予測と出力の辞書を含むタプルを返す後処理関数。
 
         Returns:
-            dict[str, torch.Tensor]: A dictionary containing the predictions for the entire batch.
+            dict[str, torch.Tensor]: バッチ全体の予測を含む辞書。
         """
         raise NotImplementedError
 
@@ -72,20 +70,20 @@ class MegatronEngine(BaseEngine):
         loss_fn: Callable[[DataProto, torch.Tensor], tuple[torch.Tensor, dict[str, torch.Tensor]]],
     ) -> dict[str, torch.Tensor]:
         """
-        Perform a training step on a mini-batch of data.
+        データのミニバッチに対してトレーニングステップを実行する。
 
         Args:
-            data (DataProto): The input data for training, typically containing tensors and metadata.
-            loss_fn (Callable): A function that computes the loss and metrics given a micro-batch and predictions.
+            data (DataProto): トレーニング用の入力データ。通常はテンソルとメタデータを含む。
+            loss_fn (Callable): マイクロバッチと予測が与えられた時に損失とメトリクスを計算する関数。
 
         Returns:
-            dict[str, torch.Tensor]: A dictionary containing the aggregated training metrics for the mini-batch.
+            dict[str, torch.Tensor]: ミニバッチの集約されたトレーニングメトリクスを含む辞書。
         """
         raise NotImplementedError
 
     def optimizer_zero_grad(self):
         """
-        Zero out gradients of all parameters before starting a new backward pass.
+        新しい逆伝播を開始する前に、すべてのパラメータの勾配をゼロにする。
         """
         raise NotImplementedError
 

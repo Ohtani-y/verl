@@ -40,45 +40,43 @@ from verl.utils.megatron_utils import (
 
 from .checkpoint_manager import BaseCheckpointManager
 
-# Setup logging
 logger = logging.getLogger(__file__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "INFO"))
 
 
 class MegatronCheckpointManager(BaseCheckpointManager):
     """
-    Checkpoint manager for Megatron-LM distributed training.
+    Megatron-LM 分散トレーニング用のチェックポイントマネージャー。
 
-    This class manages the saving and loading of model checkpoints in a Megatron-LM
-    distributed training environment. It handles various aspects of checkpointing
-    including model states, optimizer states, learning rate schedulers, and random
-    number generator states, ensuring compatibility with HuggingFace formats.
+    このクラスは Megatron-LM 分散トレーニング環境でのモデルチェックポイントの保存と読み込みを管理します。
+    モデル状態、オプティマイザ状態、学習率スケジューラー、乱数生成器状態を含むチェックポイントの
+    様々な側面を処理し、HuggingFace 形式との互換性を確保します。
 
-    Key features:
-    - Distributed checkpoint saving and loading using Megatron's dist_checkpointing
-    - Support for tensor parallel, pipeline parallel, and data parallel configurations
-    - Automatic handling of model state dictionaries across multiple pipeline stages
-    - Integration with HuggingFace model configurations and tokenizers
-    - Random number generator state management for reproducibility
-    - Support for both synchronous and asynchronous checkpoint operations
+    主な機能:
+    - Megatron の dist_checkpointing を使用した分散チェックポイントの保存と読み込み
+    - テンソル並列、パイプライン並列、データ並列構成のサポート
+    - 複数のパイプラインステージにわたるモデル状態辞書の自動処理
+    - HuggingFace モデル設定とトークナイザーとの統合
+    - 再現性のための乱数生成器状態管理
+    - 同期および非同期チェックポイント操作のサポート
 
-    The manager automatically handles:
-    - Directory structure creation based on global steps and process ranks
-    - Model configuration and tokenizer saving in HuggingFace format
-    - Optimizer and scheduler state persistence
-    - CUDA RNG state management for deterministic training
-    - Checkpoint cleanup and retention policies
+    マネージャーが自動的に処理する内容:
+    - グローバルステップとプロセスランクに基づくディレクトリ構造の作成
+    - HuggingFace 形式でのモデル設定とトークナイザーの保存
+    - オプティマイザとスケジューラー状態の永続化
+    - 決定論的トレーニングのための CUDA RNG 状態管理
+    - チェックポイントのクリーンアップと保持ポリシー
 
     Args:
-        model: The Megatron model instance to checkpoint
-        optimizer: The optimizer instance (optional)
-        lr_scheduler: The learning rate scheduler instance (optional)
+        model: チェックポイント対象の Megatron モデルインスタンス
+        optimizer: オプティマイザインスタンス（オプション）
+        lr_scheduler: 学習率スケジューラーインスタンス（オプション）
 
     Attributes:
-        model: Reference to the Megatron model being checkpointed
-        optimizer: Reference to the optimizer (if provided)
-        lr_scheduler: Reference to the learning rate scheduler (if provided)
-        rank: Current process rank in the distributed setup
+        model: チェックポイント対象の Megatron モデルへの参照
+        optimizer: オプティマイザへの参照（提供された場合）
+        lr_scheduler: 学習率スケジューラーへの参照（提供された場合）
+        rank: 分散設定での現在のプロセスランク
 
     Example:
         ```python

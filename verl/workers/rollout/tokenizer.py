@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The base tokenizer class, required for any hybrid engine based rollout or inference with vLLM.
+vLLM を使用したハイブリッドエンジンベースのロールアウトや推論に必要なベーストークナイザークラス。
 """
 
 from abc import ABC, abstractmethod
@@ -24,13 +24,13 @@ __all__ = ["HybridEngineBaseTokenizer"]
 
 
 class HybridEngineBaseTokenizer(ABC):
-    """the tokenizer property and function name should align with HF's to meet vllm requirement"""
+    """vLLM の要件を満たすため、トークナイザーのプロパティと関数名は HF のものと一致させる必要がある"""
 
     @property
     @abstractmethod
     def vocab_size(self):
         """
-        `int`: Size of the base vocabulary (without the added tokens).
+        `int`: ベース語彙のサイズ（追加トークンを除く）。
         """
         pass
 
@@ -38,7 +38,7 @@ class HybridEngineBaseTokenizer(ABC):
     @abstractmethod
     def pad_token_id(self):
         """
-        `Optional[int]`: Id of the padding token in the vocabulary. Returns `None` if the token has not been set.
+        `Optional[int]`: 語彙内のパディングトークンのID。トークンが設定されていない場合は `None` を返す。
         """
         pass
 
@@ -46,8 +46,7 @@ class HybridEngineBaseTokenizer(ABC):
     @abstractmethod
     def eos_token_id(self):
         """
-        `Optional[int]`: Id of the end of sentence token in the vocabulary. Returns `None` if the token has not been
-        set.
+        `Optional[int]`: 語彙内の文末トークンのID。トークンが設定されていない場合は `None` を返す。
         """
         pass
 
@@ -55,7 +54,7 @@ class HybridEngineBaseTokenizer(ABC):
     @abstractmethod
     def all_special_ids(self) -> list[int]:
         """
-        `List[int]`: List the ids of the special tokens(`'<unk>'`, `'<cls>'`, etc.) mapped to class attributes.
+        `List[int]`: クラス属性にマップされた特殊トークン（`'<unk>'`、`'<cls>'` など）のIDのリスト。
         """
         pass
 
@@ -63,9 +62,9 @@ class HybridEngineBaseTokenizer(ABC):
     @abstractmethod
     def all_special_tokens(self) -> list[str]:
         """
-        `List[str]`: A list of the unique special tokens (`'<unk>'`, `'<cls>'`, ..., etc.).
+        `List[str]`: 一意の特殊トークン（`'<unk>'`、`'<cls>'` など）のリスト。
 
-        Convert tokens of `tokenizers.AddedToken` type to string.
+        `tokenizers.AddedToken` 型のトークンを文字列に変換する。
         """
         pass
 

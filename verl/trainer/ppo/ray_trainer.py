@@ -14,8 +14,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-PPO Trainer with Ray-based single controller.
-This trainer supports model-agonistic model initialization with huggingface
+Ray ベースのシングルコントローラーを使用した PPO トレーナー。
+このトレーナーは huggingface でのモデル非依存のモデル初期化をサポートします。
 """
 
 import json
@@ -66,7 +66,7 @@ WorkerType = type[Worker]
 
 class Role(Enum):
     """
-    To create more roles dynamically, you can subclass Role and add new members
+    より多くのロールを動的に作成するには、Role をサブクラス化して新しいメンバーを追加できます
     """
 
     Actor = 0
@@ -81,7 +81,7 @@ class Role(Enum):
 @dataclass
 class ResourcePoolManager:
     """
-    Define a resource pool specification. Resource pool will be initialized first.
+    リソースプール仕様を定義します。リソースプールが最初に初期化されます。
     """
 
     resource_pool_spec: dict[str, list[int]]
@@ -89,18 +89,16 @@ class ResourcePoolManager:
     resource_pool_dict: dict[str, RayResourcePool] = field(default_factory=dict)
 
     def create_resource_pool(self):
-        """Create Ray resource pools for distributed training.
+        """分散トレーニング用の Ray リソースプールを作成します。
 
-        Initializes resource pools based on the resource pool specification,
-        with each pool managing GPU resources across multiple nodes.
-        For FSDP backend, uses max_colocate_count=1 to merge WorkerGroups.
-        For Megatron backend, uses max_colocate_count>1 for different models.
+        リソースプール仕様に基づいてリソースプールを初期化し、
+        各プールが複数ノードにわたって GPU リソースを管理します。
+        FSDP バックエンドでは、WorkerGroup をマージするために max_colocate_count=1 を使用します。
+        Megatron バックエンドでは、異なるモデル用に max_colocate_count>1 を使用します。
         """
         for resource_pool_name, process_on_nodes in self.resource_pool_spec.items():
-            # max_colocate_count means the number of WorkerGroups (i.e. processes) in each RayResourcePool
-            # For FSDP backend, we recommend using max_colocate_count=1 that merge all WorkerGroups into one.
-            # For Megatron backend, we recommend using max_colocate_count>1
-            # that can utilize different WorkerGroup for differnt models
+            # max_colocate_count は各 RayResourcePool 内の WorkerGroup（つまりプロセス）の数を意味します
+            # max_colocate_count>1 の使用を推奨します
             resource_pool = RayResourcePool(
                 process_on_nodes=process_on_nodes, use_gpu=True, max_colocate_count=1, name_prefix=resource_pool_name
             )
@@ -109,22 +107,21 @@ class ResourcePoolManager:
         self._check_resource_available()
 
     def get_resource_pool(self, role: Role) -> RayResourcePool:
-        """Get the resource pool of the worker_cls"""
+        """worker_cls のリソースプールを取得します"""
         return self.resource_pool_dict[self.mapping[role]]
 
     def get_n_gpus(self) -> int:
-        """Get the number of gpus in this cluster."""
+        """このクラスター内の GPU 数を取得します。"""
         return sum([n_gpus for process_on_nodes in self.resource_pool_spec.values() for n_gpus in process_on_nodes])
 
     def _check_resource_available(self):
-        """Check if the resource pool can be satisfied in this ray cluster."""
+        """この Ray クラスターでリソースプールが満たされるかどうかを確認します。"""
         node_available_resources = ray.state.available_resources_per_node()
         node_available_gpus = {
             node: node_info.get("GPU", 0) if "GPU" in node_info else node_info.get("NPU", 0)
             for node, node_info in node_available_resources.items()
         }
 
-        # check total required gpus can be satisfied
         total_available_gpus = sum(node_available_gpus.values())
         total_required_gpus = sum(
             [n_gpus for process_on_nodes in self.resource_pool_spec.values() for n_gpus in process_on_nodes]

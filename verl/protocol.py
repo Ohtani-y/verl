@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Implement base data transfer protocol between any two functions, modules.
-We can subclass Protocol to define more detailed batch info with specific keys
+任意の2つの関数、モジュール間の基本データ転送プロトコルを実装します。
+Protocolをサブクラス化して、特定のキーを持つより詳細なバッチ情報を定義できます。
 """
 
 import contextlib
@@ -68,14 +68,14 @@ _padding_size_key = "_padding_size_key_x123d"
 
 
 def pad_dataproto_to_divisor(data: "DataProto", size_divisor: int):
-    """Pad a DataProto to size divisible by size_divisor
+    """DataProtoをsize_divisorで割り切れるサイズにパディングします
 
     Args:
-        size_divisor (int): size divisor
+        size_divisor (int): サイズの除数
 
     Returns:
-        data: (DataProto): the padded DataProto
-        pad_size (int)
+        data: (DataProto): パディングされたDataProto
+        pad_size (int): パディングサイズ
     """
     assert isinstance(data, DataProto), "data must be a DataProto"
     if len(data) % size_divisor != 0:
@@ -96,14 +96,14 @@ def pad_dataproto_to_divisor(data: "DataProto", size_divisor: int):
 
 
 def unpad_dataproto(data: "DataProto", pad_size):
-    """Unpad the data proto with pad_size. i.e. `data[:-pad_size]`"""
+    """pad_sizeでdata protoのパディングを除去します。つまり `data[:-pad_size]`"""
     if pad_size != 0:
         data = data[:-pad_size]
     return data
 
 
 def union_tensor_dict(tensor_dict1: TensorDict, tensor_dict2: TensorDict) -> TensorDict:
-    """Union two tensordicts."""
+    """2つのtensordictを結合します。"""
     assert tensor_dict1.batch_size == tensor_dict2.batch_size, (
         f"Two tensor dict must have identical batch size. Got {tensor_dict1.batch_size} and {tensor_dict2.batch_size}"
     )
@@ -120,18 +120,17 @@ def union_tensor_dict(tensor_dict1: TensorDict, tensor_dict2: TensorDict) -> Ten
 
 def _array_equal(array1: np.ndarray, array2: np.ndarray, visited: set[int]) -> bool:
     """
-    Recursively compares two NumPy arrays for strict equality, with special
-    handling for object-dtype arrays, NaN values, and circular references.
-    This function assumes that the two arguments provided are NumPy arrays.
+    2つのNumPy配列を厳密に等価性を再帰的に比較します。object-dtype配列、
+    NaN値、循環参照に対する特別な処理を含みます。
+    この関数は、提供される2つの引数がNumPy配列であることを前提とします。
 
     Args:
-        array1: The first NumPy array.
-        array2: The second NumPy array.
+        array1: 最初のNumPy配列
+        array2: 2番目のNumPy配列
 
     Returns:
-        True if the arrays' dtypes, shapes, and all elements are equal.
+        配列のdtype、shape、すべての要素が等しい場合True
     """
-    # Check dtype and shape first, as this is the fastest failure path.
     if array1.dtype != array2.dtype or array1.shape != array2.shape:
         return False
 
@@ -147,11 +146,11 @@ def _array_equal(array1: np.ndarray, array2: np.ndarray, visited: set[int]) -> b
 
 def _deep_equal(a: Any, b: Any, visited: set[int]) -> bool:
     """
-    Recursively performs a deep comparison between two Python objects.
-    - Handles NaN values correctly (NaN == NaN evaluates to True).
-    - Handling circular references.
-    - Dispatches to _array_equal if both objects are NumPy arrays.
-    - Otherwise, uses standard '==' comparison.
+    2つのPythonオブジェクト間で再帰的に深い比較を実行します。
+    - NaN値を正しく処理します（NaN == NaNはTrueと評価されます）。
+    - 循環参照を処理します。
+    - 両方のオブジェクトがNumPy配列の場合、_array_equalにディスパッチします。
+    - それ以外の場合は、標準の'=='比較を使用します。
     """
     if type(a) is not type(b):
         return False

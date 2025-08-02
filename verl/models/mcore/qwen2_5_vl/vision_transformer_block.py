@@ -31,7 +31,7 @@ class Qwen2_5VisionTransformerBlock(TransformerBlock):
         packed_seq_params_full: PackedSeqParams,
         fullatt_block_indexes,
     ):
-        """Forward method with activation checkpointing."""
+        """アクティベーションチェックポイントを使用した前方計算メソッド。"""
 
         def custom(start: int, end: int):
             def custom_forward(hidden_states, attention_mask, context, context_mask, rotary_pos_emb):
@@ -56,7 +56,7 @@ class Qwen2_5VisionTransformerBlock(TransformerBlock):
             return custom_forward
 
         def checkpoint_handler(forward_func):
-            """Determines whether to use the `te_checkpoint` or `tensor_parallel.checkpoint`"""
+            """`te_checkpoint` または `tensor_parallel.checkpoint` のどちらを使用するかを決定する"""
             if self.config.fp8:
                 return te_checkpoint(
                     forward_func,
@@ -81,9 +81,7 @@ class Qwen2_5VisionTransformerBlock(TransformerBlock):
                 )
 
         if self.config.recompute_method == "uniform":
-            # Uniformly divide the total number of Transformer layers and checkpoint
-            # the input activation of each divided chunk.
-            # A method to further reduce memory usage reducing checkpoints.
+            # Transformer レイヤーの総数を均等に分割し、分割された各チャンクの
             layer_idx = 0
             while layer_idx < self.num_layers_per_pipeline_rank:
                 hidden_states, context = checkpoint_handler(
@@ -93,14 +91,8 @@ class Qwen2_5VisionTransformerBlock(TransformerBlock):
                 layer_idx += self.config.recompute_num_layers
 
         elif self.config.recompute_method == "block":
-            # Checkpoint the input activation of only a set number of individual
-            # Transformer layers and skip the rest.
-            # A method fully use the device memory removing redundant re-computation.
             recompute_skip_num_layers = 0
             for layer_idx in range(self.num_layers_per_pipeline_rank):
-                # Skip recomputation when input grad computation is not needed.
-                # Need to have at least one input tensor with gradient computation
-                # for re-enterant autograd engine.
                 if self.config.fp8 and not hidden_states.requires_grad:
                     recompute_skip_num_layers += 1
                 if (

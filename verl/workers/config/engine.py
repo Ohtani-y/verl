@@ -23,32 +23,32 @@ __all__ = ["FSDPEngineConfig", "McoreEngineConfig"]
 
 @dataclass
 class McoreEngineConfig(BaseConfig):
-    """Configuration for Megatron parallelism.
+    """Megatron 並列化の設定。
 
-    The inheritance from BaseConfig provides omegaconf.DictConfig-like interface for a dataclass config.
+    BaseConfig からの継承により、データクラス設定に omegaconf.DictConfig のようなインターフェースを提供します。
 
     Args:
-        param_offload (bool): Whether to offload parameters to CPU.
-        grad_offload (bool): Whether to offload gradients to CPU.
-        optimizer_offload (bool): Whether to offload optimizer states to CPU.
-        tensor_model_parallel_size (int): Tensor model parallel size.
-        expert_model_parallel_size (int): Expert model parallel size for MoE models.
-        expert_tensor_parallel_size (Optional[int]): Expert tensor parallel size for MoE models.
-        pipeline_model_parallel_size (int): Pipeline model parallel size.
-        virtual_pipeline_model_parallel_size (Optional[int]): Virtual pipeline model parallel size
-            for interleaved scheduling.
-        context_parallel_size (int): Context parallel size for long sequences.
-        sequence_parallel (bool): Whether to enable sequence parallelism.
-        use_distributed_optimizer (bool): Whether to use distributed optimizer.
-        use_dist_checkpointing (bool): Whether to use distributed checkpointing.
-        dist_checkpointing_path (Optional[str]): Path for distributed checkpointing.
-        seed (int): Random seed for reproducibility.
-        override_ddp_config (dict[str, Any]): Override configuration for DDP.
-        override_transformer_config (dict[str, Any]): Override configuration for transformer.
-        use_mbridge (bool): Whether to use MBridge for communication.
+        param_offload (bool): パラメータを CPU にオフロードするかどうか。
+        grad_offload (bool): 勾配を CPU にオフロードするかどうか。
+        optimizer_offload (bool): オプティマイザの状態を CPU にオフロードするかどうか。
+        tensor_model_parallel_size (int): テンソルモデル並列サイズ。
+        expert_model_parallel_size (int): MoE モデル用のエキスパートモデル並列サイズ。
+        expert_tensor_parallel_size (Optional[int]): MoE モデル用のエキスパートテンソル並列サイズ。
+        pipeline_model_parallel_size (int): パイプラインモデル並列サイズ。
+        virtual_pipeline_model_parallel_size (Optional[int]): インターリーブスケジューリング用の
+            仮想パイプラインモデル並列サイズ。
+        context_parallel_size (int): 長いシーケンス用のコンテキスト並列サイズ。
+        sequence_parallel (bool): シーケンス並列化を有効にするかどうか。
+        use_distributed_optimizer (bool): 分散オプティマイザを使用するかどうか。
+        use_dist_checkpointing (bool): 分散チェックポイントを使用するかどうか。
+        dist_checkpointing_path (Optional[str]): 分散チェックポイントのパス。
+        seed (int): 再現性のためのランダムシード。
+        override_ddp_config (dict[str, Any]): DDP の設定をオーバーライド。
+        override_transformer_config (dict[str, Any]): transformer の設定をオーバーライド。
+        use_mbridge (bool): 通信に MBridge を使用するかどうか。
     """
 
-    # sequence_parallel is not listed as a frozen field for auto-correction purpose
+    # sequence_parallel は自動修正のため frozen フィールドとしてリストされていません
     _mutable_fields = BaseConfig._mutable_fields | {"sequence_parallel"}
 
     param_offload: bool = False
@@ -70,9 +70,9 @@ class McoreEngineConfig(BaseConfig):
     use_mbridge: bool = False
 
     def __post_init__(self) -> None:
-        """config validation logics go here"""
+        """設定検証ロジックをここに記述"""
         if self.tensor_model_parallel_size == 1:
-            warnings.warn("set sequence parallel to false as TP size is 1", stacklevel=2)
+            warnings.warn("TP サイズが 1 のため sequence parallel を false に設定", stacklevel=2)
             self.sequence_parallel = False
 
 

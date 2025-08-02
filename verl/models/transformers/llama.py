@@ -50,9 +50,9 @@ def llama_flash_attn_forward(
     **kwargs,
 ) -> tuple[torch.Tensor, Optional[torch.Tensor], Optional[tuple[torch.Tensor]]]:
     """
-    Adapted from transformers 4.47.1 to support Ulysses sequence parallelism.
+    Ulysses sequence parallelism をサポートするため transformers 4.47.1 から適応。
 
-    NOTE: This function is used for transformers versions in the range [4.45.0, 4.47.1].
+    注意: この関数は transformers バージョン [4.45.0, 4.47.1] の範囲で使用される。
     """
     output_attentions = False
 
@@ -62,14 +62,12 @@ def llama_flash_attn_forward(
     key_states = self.k_proj(hidden_states)
     value_states = self.v_proj(hidden_states)
 
-    # Flash attention requires the input to have the shape
+    # Flash attention は入力が以下の形状である必要がある
     # batch_size x seq_length x head_dim x hidden_dim
-    # therefore we just need to keep the original shape
     query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
     key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
     value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
 
-    # trade off: repeat first and then all to all
     # key_states = repeat_kv(key_states, self.num_key_value_groups)
     # value_states = repeat_kv(value_states, self.num_key_value_groups)
 
@@ -84,7 +82,7 @@ def llama_flash_attn_forward(
         key_states = gather_seq_scatter_heads(key_states, seq_dim=2, head_dim=1)
         value_states = gather_seq_scatter_heads(value_states, seq_dim=2, head_dim=1)
 
-    full_q_len = query_states.size(2)  # full seq length
+    full_q_len = query_states.size(2)  # 完全なシーケンス長
 
     if position_embeddings is None:
         logger.warning_once(
@@ -99,30 +97,21 @@ def llama_flash_attn_forward(
     query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
     if past_key_value is not None:
-        # sin and cos are specific to RoPE models; cache_position needed for the static cache
         cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
         key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
-    # TODO: These transpose are quite inefficient but Flash Attention requires the layout
-    # [batch_size, sequence_length, num_heads, head_dim]. We would need to refactor the KV cache
-    # to be able to avoid many of these transpose/reshape/view.
+    # [batch_size, sequence_length, num_heads, head_dim] を要求する。これらの転置/reshape/view を
     query_states = query_states.transpose(1, 2)
     key_states = key_states.transpose(1, 2)
     value_states = value_states.transpose(1, 2)
 
     dropout_rate = self.attention_dropout if self.training else 0.0
 
-    # In PEFT, usually we cast the layer norms in float32 for training stability reasons
-    # therefore the input hidden states gets silently casted in float32. Hence, we need
-    # cast them back in the correct dtype just to be sure everything works as expected.
-    # This might slowdown training & inference so it is recommended to not cast the LayerNorms
-    # in fp32. (LlamaRMSNorm handles it correctly)
 
     input_dtype = query_states.dtype
     if input_dtype == torch.float32:
         if torch.is_autocast_enabled():
             target_dtype = torch.get_autocast_gpu_dtype()
-        # Handle the case where the model is quantized
         elif hasattr(self.config, "_pre_quantization_dtype"):
             target_dtype = self.config._pre_quantization_dtype
         else:
@@ -175,9 +164,9 @@ def llama_attn_forward(
     **kwargs,
 ) -> tuple[torch.Tensor, Optional[torch.Tensor], Optional[tuple[torch.Tensor]]]:
     """
-    Adapted from transformers 4.49.0 to support Ulysses sequence parallelism for transformers >= 4.48.0.
+    transformers >= 4.48.0 で Ulysses sequence parallelism をサポートするため transformers 4.49.0 から適応。
 
-    NOTE: This function has been tested only on transformers versions between 4.48.0 and 4.50.0.
+    注意: この関数は transformers バージョン 4.48.0 から 4.50.0 の間でのみテストされている。
     """
     from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
     from transformers.models.llama.modeling_llama import eager_attention_forward
@@ -204,7 +193,6 @@ def llama_attn_forward(
     query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
     if past_key_value is not None:
-        # sin and cos are specific to RoPE models; cache_position needed for the static cache
         cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
         key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
 

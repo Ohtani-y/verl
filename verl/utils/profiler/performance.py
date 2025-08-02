@@ -27,30 +27,27 @@ from verl.utils.logger import DecoratorLoggerBase
 
 
 def _get_current_mem_info(unit: str = "GB", precision: int = 2) -> tuple[str]:
-    """Get current memory usage.
+    """現在のメモリ使用量を取得します。
 
-    Note that CPU device memory info is always 0.
+    注意: CPU デバイスのメモリ情報は常に 0 です。
 
     Args:
-        unit (str, optional): The unit of memory measurement. Defaults to "GB".
-        precision (int, optional): The number of decimal places to round memory values. Defaults to 2.
+        unit (str, optional): メモリ測定の単位。デフォルトは "GB"。
+        precision (int, optional): メモリ値を丸める小数点以下の桁数。デフォルトは 2。
 
     Returns:
-        tuple[str]: A tuple containing memory allocated, memory reserved, memory used, and memory total
-        in the specified unit.
+        tuple[str]: 指定された単位でのメモリ割り当て、メモリ予約、メモリ使用、メモリ合計を含むタプル。
     """
     assert unit in ["GB", "MB", "KB"]
     device = get_torch_device()
-    # torch.cpu.memory_allocated() does not exist
+    # torch.cpu.memory_allocated() は存在しません
     if device == torch.cpu:
         return "0.00", "0.00", "0.00", "0.00"
 
     divisor = 1024**3 if unit == "GB" else 1024**2 if unit == "MB" else 1024
     mem_allocated = get_torch_device().memory_allocated()
     mem_reserved = get_torch_device().memory_reserved()
-    # use get_torch_device().mem_get_info to profile device memory
-    # since vllm's sleep mode works below pytorch
-    # see https://github.com/vllm-project/vllm/pull/11743#issuecomment-2754338119
+    # 参照: https://github.com/vllm-project/vllm/pull/11743#issuecomment-2754338119
     mem_free, mem_total = get_torch_device().mem_get_info()
     mem_used = mem_total - mem_free
     mem_allocated = f"{mem_allocated / divisor:.{precision}f}"
@@ -61,13 +58,13 @@ def _get_current_mem_info(unit: str = "GB", precision: int = 2) -> tuple[str]:
 
 
 def log_gpu_memory_usage(head: str, logger: logging.Logger = None, level=logging.DEBUG, rank: int = 0):
-    """Log GPU memory usage information.
+    """GPU メモリ使用量情報をログに記録します。
 
     Args:
-        head (str): A descriptive header for the memory usage log message.
-        logger (logging.Logger, optional): Logger instance to use for logging. If None, prints to stdout.
-        level: Logging level to use. Defaults to logging.DEBUG.
-        rank (int): The rank of the process to log memory for. Defaults to 0.
+        head (str): メモリ使用量ログメッセージの説明的なヘッダー。
+        logger (logging.Logger, optional): ログ記録に使用する Logger インスタンス。None の場合、stdout に出力。
+        level: 使用するログレベル。デフォルトは logging.DEBUG。
+        rank (int): メモリをログに記録するプロセスのランク。デフォルトは 0。
     """
     if (not dist.is_initialized()) or (rank is None) or (dist.get_rank() == rank):
         mem_allocated, mem_reserved, mem_used, mem_total = _get_current_mem_info()
@@ -83,13 +80,13 @@ def log_gpu_memory_usage(head: str, logger: logging.Logger = None, level=logging
 
 
 class GPUMemoryLogger(DecoratorLoggerBase):
-    """A decorator class to log GPU memory usage.
+    """GPU メモリ使用量をログに記録するデコレータクラス。
 
     Example:
         >>> from verl.utils.profiler.performance import GPUMemoryLogger
         >>> @GPUMemoryLogger(role="actor")
         >>> def update_actor(self, batch):
-        ...     # real actor update logics
+        ...     # 実際の actor 更新ロジック
         ...     return
     """
 

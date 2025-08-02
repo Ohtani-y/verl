@@ -30,12 +30,12 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 
 class Geo3kTool(BaseTool):
-    """A demo tool for calculating the reward of geo3k.
-    - `get_openai_tool_schema`: return the tool schema in OpenAI format.
-    - `create`: create a tool instance for a trajectory.
-    - `execute`: execute the tool.
-    - `calc_reward`: calculate the reward respect to tool state.
-    - `release`: release the tool instance.
+    """geo3k の報酬計算用デモツール。
+    - `get_openai_tool_schema`: OpenAI 形式でツールスキーマを返す。
+    - `create`: 軌跡用のツールインスタンスを作成。
+    - `execute`: ツールを実行。
+    - `calc_reward`: ツール状態に対する報酬を計算。
+    - `release`: ツールインスタンスを解放。
     """
 
     def __init__(self, config: dict, tool_schema: OpenAIFunctionToolSchema):
@@ -44,13 +44,13 @@ class Geo3kTool(BaseTool):
             "type": "function",
             "function": {
                 "name": "calc_geo3k_reward",
-                "description": "A tool for calculating the reward of geo3k",
+                "description": "geo3k の報酬計算用ツール",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "answer": {
                             "type": "string",
-                            "description": "The answer to the question, enclosed in \\boxed{}",
+                            "description": "\\boxed{} で囲まれた質問への回答",
                         },
                     },
                     "required": ["answer"],
@@ -81,9 +81,7 @@ class Geo3kTool(BaseTool):
             answer = str(answer)
         self._instance_dict[instance_id]["response"] = answer
         reward = await self.calc_reward(instance_id)
-        # penalty for non improved answer submission
         tool_reward = 0.0 if reward > self._instance_dict[instance_id]["reward"] else -0.05
-        # update the reward
         self._instance_dict[instance_id]["reward"] = reward
         return f"Current parsed {answer=} {reward=}", tool_reward, {}
 

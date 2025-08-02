@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains commonly used utilities for ray
+Ray用の一般的なユーティリティを含む
 """
 
 import concurrent.futures
@@ -23,7 +23,6 @@ import ray
 
 
 def ray_noset_visible_devices(env_vars=os.environ):
-    # Refer to
     # https://github.com/ray-project/ray/blob/161849364a784442cc659fb9780f1a6adee85fce/python/ray/_private/accelerators/nvidia_gpu.py#L95-L96
     # https://github.com/ray-project/ray/blob/161849364a784442cc659fb9780f1a6adee85fce/python/ray/_private/accelerators/amd_gpu.py#L102-L103
     # https://github.com/ray-project/ray/blob/3b9e729f6a669ffd85190f901f5e262af79771b0/python/ray/_private/accelerators/amd_gpu.py#L114-L115
@@ -47,16 +46,16 @@ def ray_noset_visible_devices(env_vars=os.environ):
 
 def parallel_put(data_list: list[Any], max_workers: Optional[int] = None):
     """
-    Puts a list of data into the Ray object store in parallel using a thread pool.
+    スレッドプールを使用してデータのリストをRayオブジェクトストアに並列で格納する。
 
     Args:
-        data_list (List[Any]): A list of Python objects to be put into the Ray object store.
-        max_workers (int, optional): The maximum number of worker threads to use.
-                                     Defaults to min(len(data_list), 16).
+        data_list (List[Any]): Rayオブジェクトストアに格納するPythonオブジェクトのリスト。
+        max_workers (int, optional): 使用するワーカースレッドの最大数。
+                                     デフォルトはmin(len(data_list), 16)。
 
     Returns:
-        List[ray.ObjectRef]: A list of Ray object references corresponding to the input data_list,
-                             maintaining the original order.
+        List[ray.ObjectRef]: 入力data_listに対応するRayオブジェクト参照のリスト。
+                             元の順序を維持する。
     """
     assert len(data_list) > 0, "data_list must not be empty"
 

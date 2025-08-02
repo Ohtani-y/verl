@@ -19,16 +19,15 @@ from types import FunctionType
 from verl.protocol import DataProtoFuture, _padding_size_key
 from verl.utils.py_functional import DynamicEnum
 
-# here we add a magic number of avoid user-defined function already have this attribute
 MAGIC_ATTR = "attrs_3141562937"
 
 
 class Dispatch(DynamicEnum):
-    """Enum class defining different dispatch modes for distributed computation.
+    """分散計算のための異なるディスパッチモードを定義するEnumクラス。
 
-    Each mode represents a specific strategy for distributing data across
-    different ranks in a distributed system. The modes are used to control
-    how data is partitioned and processed across different worker groups.
+    各モードは分散システム内の異なるランク間でデータを分散するための
+    特定の戦略を表します。これらのモードは、異なるワーカーグループ間で
+    データがどのように分割・処理されるかを制御するために使用されます。
     """
 
     _registry = {}
@@ -48,15 +47,14 @@ def init_predefined_dispatch_mode():
     Dispatch.register("DP_COMPUTE_PROTO")
     Dispatch.register("DP_COMPUTE_PROTO_WITH_FUNC")
     Dispatch.register("DP_COMPUTE_METRIC")
-    # This is a special dispatch mode for vllm ExternalRayDistributedExecutor
     Dispatch.register("DIRECT_ROLLOUT_METHOD")
 
 
 class Execute(DynamicEnum):
-    """Enum class defining different execution modes for distributed computation.
+    """分散計算のための異なる実行モードを定義するEnumクラス。
 
-    These modes control how a function should be executed across different ranks
-    in a distributed system.
+    これらのモードは、分散システム内の異なるランク間で関数がどのように
+    実行されるべきかを制御します。
     """
 
     _registry = {}
@@ -68,7 +66,6 @@ def init_predefined_execute_mode():
     Execute.register("RANK_ZERO")
 
 
-# Initialize the two Dynamic Enum Classes
 init_predefined_dispatch_mode()
 init_predefined_execute_mode()
 
@@ -99,7 +96,6 @@ def _split_args_kwargs_data_proto_with_auto_padding(chunks, *args, **kwargs):
         nonlocal data_proto_len, padding_size
         assert isinstance(obj, DataProto | DataProtoFuture)
         if isinstance(obj, DataProto) and obj.is_padding_enabled():
-            # for padding, we only support DataProto with same length
             if data_proto_len is None:
                 data_proto_len = len(obj)
                 padding_size = (chunks - (data_proto_len % chunks)) if (data_proto_len % chunks > 0) else 0
@@ -138,7 +134,7 @@ def collect_all_to_all(worker_group, output):
 
 def dispatch_megatron_compute(worker_group, *args, **kwargs):
     """
-    User passes in dp data. The data is dispatched to all tp/pp ranks with the same dp
+    ユーザーがdpデータを渡します。データは同じdpを持つすべてのtp/ppランクにディスパッチされます
     """
     from verl.single_controller.base.megatron.worker_group import MegatronWorkerGroup
 
@@ -146,7 +142,6 @@ def dispatch_megatron_compute(worker_group, *args, **kwargs):
         f"worker_group must be MegatronWorkerGroup, Got {type(worker_group)}"
     )
 
-    # ray put all the args in advance to avoid duplicate serialization cost
     import ray
 
     args = [[ray.put(dp_arg) for dp_arg in arg] for arg in args]
@@ -168,7 +163,7 @@ def dispatch_megatron_compute(worker_group, *args, **kwargs):
 
 def collect_megatron_compute(worker_group, output):
     """
-    Only collect the data from the tp=0 and pp=last and every dp ranks
+    tp=0、pp=last、およびすべてのdpランクからのみデータを収集します
     """
     from verl.single_controller.base.megatron.worker_group import MegatronWorkerGroup
 
@@ -184,7 +179,7 @@ def collect_megatron_compute(worker_group, output):
 
 def dispatch_megatron_compute_data_proto(worker_group, *args, **kwargs):
     """
-    All the args and kwargs must be DataProto. The batch will be chunked by dp_size and passed to each rank
+    すべてのargsとkwargsはDataProtoである必要があります。バッチはdp_sizeでチャンクされ、各ランクに渡されます
     """
     from verl.single_controller.base.megatron.worker_group import MegatronWorkerGroup
 

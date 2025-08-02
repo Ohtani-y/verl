@@ -72,7 +72,7 @@ class LlamaRotaryEmbedding(nn.Module):
 
 
 class LlamaLinearScalingRotaryEmbedding(LlamaRotaryEmbedding):
-    """LlamaRotaryEmbedding extended with linear scaling. Credits to the Reddit user /u/kaiokendev"""
+    """線形スケーリングで拡張されたLlamaRotaryEmbedding。Reddit ユーザー /u/kaiokendev に感謝"""
 
     def __init__(self, dim, max_position_embeddings=2048, base=10000, device=None, scaling_factor=1.0):
         self.scaling_factor = scaling_factor
@@ -91,7 +91,7 @@ class LlamaLinearScalingRotaryEmbedding(LlamaRotaryEmbedding):
 
 
 class LlamaDynamicNTKScalingRotaryEmbedding(LlamaRotaryEmbedding):
-    """LlamaRotaryEmbedding extended with Dynamic NTK scaling. Credits to the Reddit users /u/bloc97 and /u/emozilla"""
+    """Dynamic NTK スケーリングで拡張されたLlamaRotaryEmbedding。Reddit ユーザー /u/bloc97 と /u/emozilla に感謝"""
 
     def __init__(self, dim, max_position_embeddings=2048, base=10000, device=None, scaling_factor=1.0):
         self.scaling_factor = scaling_factor
@@ -120,20 +120,19 @@ class LlamaLlama3ScalingRotaryEmbedding(LlamaRotaryEmbedding):
     def __init__(self, dim, config, max_position_embeddings=2048, base=10000, device=None):
         super().__init__(dim, max_position_embeddings, base, device)
 
-        self.factor = config.rope_scaling["factor"]  # `8` in the original implementation
-        self.high_freq_factor = config.rope_scaling["high_freq_factor"]  # `1` in the original implementation
-        self.low_freq_factor = config.rope_scaling["low_freq_factor"]  # `4` in the original implementation
+        self.factor = config.rope_scaling["factor"]  # 元の実装では `8`
+        self.high_freq_factor = config.rope_scaling["high_freq_factor"]  # 元の実装では `1`
+        self.low_freq_factor = config.rope_scaling["low_freq_factor"]  # 元の実装では `4`
         self.old_context_len = config.rope_scaling[
             "original_max_position_embeddings"
-        ]  # `8192` in the original implementation
+        ]  # 元の実装では `8192`
 
         low_freq_wavelen = self.old_context_len / self.low_freq_factor
         high_freq_wavelen = self.old_context_len / self.high_freq_factor
 
         wavelen = 2 * math.pi / self.inv_freq
-        # wavelen < high_freq_wavelen: do nothing; wavelen > low_freq_wavelen: divide by factor
+        # wavelen < high_freq_wavelen: 何もしない; wavelen > low_freq_wavelen: factor で除算
         inv_freq_llama = torch.where(wavelen > low_freq_wavelen, self.inv_freq / self.factor, self.inv_freq)
-        # otherwise: interpolate between the two, using a smooth factor
         smooth_factor = (self.old_context_len / wavelen - self.low_freq_factor) / (
             self.high_freq_factor - self.low_freq_factor
         )
@@ -150,7 +149,7 @@ class LlamaLlama3ScalingRotaryEmbedding(LlamaRotaryEmbedding):
 
 
 def rotate_half(x):
-    """Rotates half the hidden dims of the input."""
+    """入力の隠れ次元の半分を回転させる"""
     x1 = x[..., : x.shape[-1] // 2]
     x2 = x[..., x.shape[-1] // 2 :]
     return torch.cat((-x2, x1), dim=-1)
@@ -166,8 +165,8 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids):
 
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     """
-    This is the equivalent of torch.repeat_interleave(x, dim=1, repeats=n_rep). The hidden states go from (batch,
-    num_key_value_heads, seqlen, head_dim) to (batch, num_attention_heads, seqlen, head_dim)
+    これは torch.repeat_interleave(x, dim=1, repeats=n_rep) と同等です。隠れ状態は (batch,
+    num_key_value_heads, seqlen, head_dim) から (batch, num_attention_heads, seqlen, head_dim) に変換されます
     """
     batch, num_key_value_heads, slen, head_dim = hidden_states.shape
     if n_rep == 1:
@@ -177,7 +176,7 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 class ParallelLlamaAttention(nn.Module):
-    """Multi-headed attention from 'Attention Is All You Need' paper"""
+    """'Attention Is All You Need' 論文のマルチヘッドアテンション"""
 
     def __init__(self, config: LlamaConfig, megatron_config: ModelParallelConfig):
         super().__init__()
@@ -191,7 +190,6 @@ class ParallelLlamaAttention(nn.Module):
         self.max_position_embeddings = config.max_position_embeddings
         self.rope_theta = config.rope_theta
 
-        # assign values after tp
         tp_size = mpu.get_tensor_model_parallel_world_size()
         assert self.num_heads % tp_size == 0, (
             f"num_head must be divisible by tp_size. Got num_head={self.num_heads}, tp_size={tp_size}"
@@ -321,7 +319,6 @@ class ParallelLlamaAttention(nn.Module):
                 )
             attn_weights = attn_weights + attention_mask
 
-        # upcast attention to fp32
         attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
         attn_output = torch.matmul(attn_weights, value_states)
 

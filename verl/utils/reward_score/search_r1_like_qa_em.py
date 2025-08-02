@@ -64,8 +64,7 @@ def subem_check(prediction, golden_answers):
 
 
 def extract_solution(solution_str):
-    """Extract the equation from the solution string."""
-    # Remove everything before the first "Assistant:"
+    """解答文字列から方程式を抽出します。"""
     # if "Assistant:" in solution_str:
     #     solution_str = solution_str.split("Assistant:", 1)[1]
     # elif "<|im_start|>assistant" in solution_str:
@@ -78,11 +77,9 @@ def extract_solution(solution_str):
     match = re.finditer(answer_pattern, solution_str, re.DOTALL)
     matches = list(match)
 
-    # If there are 0  matches, return None
     if len(matches) < 1:
         return None
 
-    # If there are 2 or more matches, return the last one
     return matches[-1].group(1).strip()
 
 
@@ -94,14 +91,14 @@ def count_answer_tags(text):
 
 
 def compute_score(solution_str, ground_truth, method="strict", format_score=0.0, score=1.0):
-    """The scoring function for exact match (EM).
+    """完全一致（EM）のスコア計算関数。
 
     Args:
-        solution_str: the solution text
-        ground_truth: the ground truth
-        method: the method to extract the solution, choices are 'strict' and 'flexible'
-        format_score: the score for the format
-        score: the score for the correct answer
+        solution_str: 解答テキスト
+        ground_truth: 正解データ
+        method: 解答抽出方法、'strict'と'flexible'から選択
+        format_score: フォーマットのスコア
+        score: 正解のスコア
     """
     answer = extract_solution(solution_str=solution_str)
     open_count, close_count = count_answer_tags(solution_str)
@@ -120,7 +117,7 @@ def compute_score(solution_str, ground_truth, method="strict", format_score=0.0,
         return 0
     else:
         if em_check(answer, ground_truth["target"]):
-            if open_count > 10 or close_count > 10:  # prevent output a lot of </answer>
+            if open_count > 10 or close_count > 10:  # 大量の</answer>出力を防ぐ
                 score = score / 4
                 return score
             return score
@@ -129,14 +126,14 @@ def compute_score(solution_str, ground_truth, method="strict", format_score=0.0,
 
 
 def compute_score_subem(solution_str, ground_truth, method="strict", format_score=0.0, score=1.0):
-    """The scoring function for substring exact match (EM).
+    """部分文字列完全一致（EM）のスコア計算関数。
 
     Args:
-        solution_str: the solution text
-        ground_truth: the ground truth
-        method: the method to extract the solution, choices are 'strict' and 'flexible'
-        format_score: the score for the format
-        score: the score for the correct answer
+        solution_str: 解答テキスト
+        ground_truth: 正解データ
+        method: 解答抽出方法、'strict'と'flexible'から選択
+        format_score: フォーマットのスコア
+        score: 正解のスコア
     """
     answer = extract_solution(solution_str=solution_str)
     do_print = random.randint(1, 64) == 1

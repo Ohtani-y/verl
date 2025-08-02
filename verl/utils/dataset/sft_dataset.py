@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-SFT dataset
-- We assume user pass a single parquet file.
-- We load all the data into the memory.
-Each parquet file contains
+SFT データセット
+- ユーザーが単一の parquet ファイルを渡すことを想定
+- すべてのデータをメモリに読み込む
+各 parquet ファイルには以下が含まれる
 """
 
 import pandas as pd
@@ -31,10 +31,10 @@ from verl.utils.model import compute_position_id_with_mask
 
 class SFTDataset(Dataset):
     """
-    This is an in-memory SFTDataset
+    これはインメモリ SFTDataset です
 
-    Arguments:
-        config (OmegaConf): the data config
+    引数:
+        config (OmegaConf): データ設定
     """
 
     def __init__(self, parquet_files: str | ListConfig, tokenizer, config):
@@ -83,7 +83,6 @@ class SFTDataset(Dataset):
 
         dataframes = []
         for parquet_file in self.parquet_files:
-            # read parquet files and cache
             dataframe = pd.read_parquet(parquet_file)
             dataframes.append(dataframe)
         self.dataframe = pd.concat(dataframes)
@@ -120,14 +119,11 @@ class SFTDataset(Dataset):
         prompt = self.prompts[item]
         response = self.responses[item]
 
-        # apply chat template
         prompt_chat = [{"role": "user", "content": prompt}]
 
-        # string
         prompt_chat_str = tokenizer.apply_chat_template(prompt_chat, add_generation_prompt=True, tokenize=False)
         response_chat_str = response + tokenizer.eos_token
 
-        # tokenize
         prompt_ids_output = tokenizer(prompt_chat_str, return_tensors="pt", add_special_tokens=False)
         prompt_ids = prompt_ids_output["input_ids"][0]
         prompt_attention_mask = prompt_ids_output["attention_mask"][0]
@@ -142,7 +138,6 @@ class SFTDataset(Dataset):
         input_ids = torch.cat((prompt_ids, response_ids), dim=-1)
         attention_mask = torch.cat((prompt_attention_mask, response_attention_mask), dim=-1)
 
-        # padding to max length
         sequence_length = input_ids.shape[0]
         if sequence_length < self.max_length:
             padded_input_ids = (
@@ -155,7 +150,6 @@ class SFTDataset(Dataset):
             attention_mask = torch.cat((attention_mask, padded_attention_mask))
         elif sequence_length > self.max_length:
             if self.truncation == "left":
-                # actually, left truncation may not be reasonable
                 input_ids = input_ids[-self.max_length :]
                 attention_mask = attention_mask[-self.max_length :]
             elif self.truncation == "right":
@@ -170,9 +164,7 @@ class SFTDataset(Dataset):
 
         loss_mask = attention_mask.clone()
         if prompt_length > 1:
-            # mask out prompt for SFT.
             loss_mask[: min(prompt_length, loss_mask.size(0)) - 1] = 0
-        # mask out the last token in response
         loss_mask[min(prompt_length + response_length, loss_mask.size(0)) - 1] = 0
 
         return {

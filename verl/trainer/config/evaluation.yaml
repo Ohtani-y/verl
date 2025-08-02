@@ -10,5 +10,5 @@ custom_reward_function:
   name: compute_score
 
 ray_init:
-  num_cpus: null # `None` means using all CPUs, which might cause hang if limited in systems like SLURM. Please set to a number allowed then.
+  num_cpus: null # `None` は全CPUを使用することを意味しますが、SLURMなどの制限されたシステムではハングする可能性があります。許可された数値を設定してください。
   timeline_json_file: null

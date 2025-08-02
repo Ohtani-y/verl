@@ -23,7 +23,7 @@ from verl.workers.reward_manager import register
 
 @register("dapo")
 class DAPORewardManager:
-    """The reward manager."""
+    """報酬マネージャー。"""
 
     def __init__(
         self,
@@ -35,7 +35,7 @@ class DAPORewardManager:
         overlong_buffer_cfg=None,
     ) -> None:
         self.tokenizer = tokenizer
-        self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
+        self.num_examine = num_examine  # コンソールに出力するデコードされたレスポンスのバッチ数
         self.compute_score = compute_score or default_compute_score
         self.reward_fn_key = reward_fn_key
         self.overlong_buffer_cfg = overlong_buffer_cfg
@@ -50,9 +50,8 @@ class DAPORewardManager:
             )
 
     def __call__(self, data: DataProto, return_dict: bool = False):
-        """We will expand this function gradually based on the available datasets"""
+        """利用可能なデータセットに基づいて、この関数を段階的に拡張していきます"""
 
-        # If there is rm score, we directly return rm score. Otherwise, we compute via rm_score_fn
         if "rm_scores" in data.batch.keys():
             if return_dict:
                 return {"reward_tensor": data.batch["rm_scores"]}
@@ -78,7 +77,6 @@ class DAPORewardManager:
             valid_response_length = data_item.batch["attention_mask"][prompt_length:].sum()
             valid_response_ids = response_ids[:valid_response_length]
 
-            # decode
             prompt_str = self.tokenizer.decode(valid_prompt_ids, skip_special_tokens=True)
             response_str = self.tokenizer.decode(valid_response_ids, skip_special_tokens=True)
             eos_token = self.tokenizer.eos_token
@@ -101,7 +99,6 @@ class DAPORewardManager:
             score: float
             if isinstance(result, dict):
                 score = result["score"]
-                # Store the information including original reward
                 for key, value in result.items():
                     reward_extra_info[key].append(value)
             else:

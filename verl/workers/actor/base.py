@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The base class for Actor
+Actor の基底クラス
 """
 
 from abc import ABC, abstractmethod
@@ -26,25 +26,25 @@ __all__ = ["BasePPOActor"]
 
 class BasePPOActor(ABC):
     def __init__(self, config):
-        """The base class for PPO actor
+        """PPO actor の基底クラス
 
         Args:
-            config (DictConfig): a config passed to the PPOActor. We expect the type to be
-                DictConfig (https://omegaconf.readthedocs.io/), but it can be any namedtuple in general.
+            config (DictConfig): PPOActor に渡される設定。DictConfig 型を期待しますが
+                (https://omegaconf.readthedocs.io/)、一般的には任意の namedtuple でも可能です。
         """
         super().__init__()
         self.config = config
 
     @abstractmethod
     def compute_log_prob(self, data: DataProto) -> torch.Tensor:
-        """Compute logits given a batch of data.
+        """データのバッチが与えられた場合の logits を計算します。
 
         Args:
-            data (DataProto): a batch of data represented by DataProto. It must contain key ```input_ids```,
-                ```attention_mask``` and ```position_ids```.
+            data (DataProto): DataProto で表現されたデータのバッチ。```input_ids```、
+                ```attention_mask```、```position_ids``` のキーを含む必要があります。
 
         Returns:
-            DataProto: a DataProto containing the key ```log_probs```
+            DataProto: ```log_probs``` キーを含む DataProto
 
 
         """
@@ -52,15 +52,15 @@ class BasePPOActor(ABC):
 
     @abstractmethod
     def update_policy(self, data: DataProto) -> dict:
-        """Update the policy with an iterator of DataProto
+        """DataProto のイテレータでポリシーを更新します
 
         Args:
-            data (DataProto): an iterator over the DataProto that returns by
-                ```make_minibatch_iterator```
+            data (DataProto): ```make_minibatch_iterator``` によって返される
+                DataProto のイテレータ
 
         Returns:
-            Dict: a dictionary contains anything. Typically, it contains the statistics during updating the model
-            such as ```loss```, ```grad_norm```, etc,.
+            Dict: 任意の内容を含む辞書。通常、モデル更新中の統計情報
+            （```loss```、```grad_norm``` など）を含みます。
 
         """
         pass

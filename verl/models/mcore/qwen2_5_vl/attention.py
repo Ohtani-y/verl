@@ -21,8 +21,8 @@ from .rope_utils import apply_rotary_pos_emb_absolute
 
 class Qwen2_5VLSelfAttention(SelfAttention):
     """
-    Overrides the SelfAttention class, the difference is that qwen2_5_vl uses apply_rotary_pos_emb_absolute
-    instead of apply_rotary_pos_emb
+    SelfAttention クラスをオーバーライドします。qwen2_5_vl は apply_rotary_pos_emb の代わりに
+    apply_rotary_pos_emb_absolute を使用する点が異なります
     """
 
     def forward(
@@ -41,25 +41,25 @@ class Qwen2_5VLSelfAttention(SelfAttention):
         inference_params: Optional[BaseInferenceContext] = None,
     ) -> Tuple[Tensor, Tensor]:
         """
-        Perform a forward pass through the attention module.
+        attention モジュールの順伝播を実行します。
 
         Args:
-            hidden_states (Tensor): Hidden states.
-            attention_mask (Tensor): Attention mask.
-            key_value_states (Optional[Tensor]): Key/value states (for cross attention).
-            inference_context (Optional[BaseInferenceContext]): Inference context that manages
-                KV cache.
+            hidden_states (Tensor): 隠れ状態
+            attention_mask (Tensor): attention マスク
+            key_value_states (Optional[Tensor]): Key/value 状態（cross attention 用）
+            inference_context (Optional[BaseInferenceContext]): KV キャッシュを管理する
+                推論コンテキスト
             rotary_pos_emb (Optional[Union[Tensor, Tuple[Tensor, Tensor]]]): Rotary
-                embedding tensor(s).
-            rotary_pos_cos (Optional[Tensor]): Rotary embedding cosine.
-            rotary_pos_sin (Optional[Tensor]): Rotary embedding sine.
-            attention_bias (Optional[Tensor]): Attention bias.
-            packed_seq_params (Optional[PackedSeqparams]): Parameters used for THD format.
-            sequence_len_offset (Optional[int]): Sequence length offset used for
-                inference CUDA graphs.
+                embedding テンソル
+            rotary_pos_cos (Optional[Tensor]): Rotary embedding のコサイン
+            rotary_pos_sin (Optional[Tensor]): Rotary embedding のサイン
+            attention_bias (Optional[Tensor]): attention バイアス
+            packed_seq_params (Optional[PackedSeqparams]): THD 形式で使用されるパラメータ
+            sequence_len_offset (Optional[int]): 推論 CUDA グラフで使用される
+                シーケンス長オフセット
 
         Return:
-            (Tuple[Tensor, Tensor]) Attention output and bias.
+            (Tuple[Tensor, Tensor]) attention 出力とバイアス
 
         """
 
@@ -76,23 +76,17 @@ class Qwen2_5VLSelfAttention(SelfAttention):
         else:
             assert rotary_pos_cos is None and rotary_pos_sin is None
 
-        # For self attention we just duplicate the rotary_pos_emb if it isn't already
         if rotary_pos_emb is not None and not isinstance(rotary_pos_emb, tuple):
             rotary_pos_emb = (rotary_pos_emb,) * 2
 
         # =====================
         # Query, Key, and Value
         # =====================
-        # Get the query, key and value tensors based on the type of attention -
-        # self or cross attn.
         query, key, value = self.get_query_key_value_tensors(hidden_states, key_value_states)
 
         # ===================================================
-        # Adjust key, value, and rotary_pos_emb for inference
         # ===================================================
 
-        # This branch only runs in the decode phase of flash decoding and returns after the linear
-        # projection. This conditional is not used in the prefill phase or non-flash-decoding cases.
         if (
             self.config.flash_decode
             and inference_context is not None

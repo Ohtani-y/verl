@@ -33,20 +33,20 @@ VALID_CONFIG_TYPE = {
 
 
 def get_device_flops(unit="T"):
-    """Get the theoretical FLOPS (Floating Point Operations Per Second) capacity of the current device.
+    """現在のデバイスの理論的な FLOPS（Floating Point Operations Per Second）容量を取得します。
 
     Args:
-        unit (str): The unit to return the FLOPS in. Supported values are:
+        unit (str): FLOPS を返す単位。サポートされる値は以下の通り:
             "B" - Billion (1e9)
             "K" - Thousand (1e3)
             "M" - Million (1e6)
             "G" - Giga (1e9)
-            "T" - Tera (1e12, default)
+            "T" - Tera (1e12, デフォルト)
             "P" - Peta (1e15)
 
     Returns:
-        float: The theoretical FLOPS capacity of the current device in the specified unit.
-        Returns float('inf') for unknown GPU types.
+        float: 指定された単位での現在のデバイスの理論的 FLOPS 容量。
+        未知の GPU タイプの場合は float('inf') を返します。
     """
 
     def unit_convert(number, level):
@@ -64,10 +64,9 @@ def get_device_flops(unit="T"):
         device_name = "CPU"
     else:
         device_name = get_torch_device().get_device_name()
-    flops = float("inf")  # INF flops for unkown gpu type
+    flops = float("inf")  # 未知の GPU タイプに対する無限大 FLOPS
 
     if "CPU" in device_name:
-        # use a general CPU flops placeholder to make the function CPU compatible
         flops = 448e9
     elif "MI300X" in device_name:
         flops = 1336e12
@@ -91,9 +90,9 @@ def get_device_flops(unit="T"):
 
 class FlopsCounter:
     """
-    Used to count mfu during training loop
+    トレーニングループ中の MFU をカウントするために使用されます
 
-    Example:
+    例:
         flops_counter = FlopsCounter(config)
         flops_achieved, flops_promised = flops_counter.estimate_flops(tokens_list, delta_time)
 
@@ -138,8 +137,7 @@ class FlopsCounter:
         k_size = num_key_value_heads * head_dim
         v_size = num_key_value_heads * head_dim
 
-        # non-attn per layer parm
-        # Qwen2/LLama use SwiGelu, gate, having up and down linear layer in mlp
+        # Qwen2/LLama は SwiGelu、ゲートを使用し、MLP に up と down の線形レイヤーを持つ
         mlp_N = hidden_size * intermediate_size * 3
         attn_linear_N = hidden_size * (q_size + k_size + v_size + num_attention_heads * head_dim)
         emd_and_lm_head_N = vocab_size * hidden_size * 2
@@ -173,9 +171,7 @@ class FlopsCounter:
 
         # non-attn per layer parm
         moe_gata_N = hidden_size * moe_num_expert
-        # moe has fc1_1, fc1_2 and fc2 using SwiGLU in ExpertMlp layer & shared experts
         moe_expertmlp_N = hidden_size * moe_intermediate_size * (moe_topk + share_expert_num) * 3
-        # MLA attn
         attn_linear_N = 0
         q_head_dim = self.config.qk_nope_head_dim + self.config.qk_rope_head_dim
         if self.config.q_lora_rank is None:
@@ -229,7 +225,6 @@ class FlopsCounter:
         v_size = num_key_value_heads * head_dim
 
         # non-attn per layer parm
-        # gate + moe export
         moe_mlp_N = hidden_size * moe_topk * moe_intermediate_size * 3 + hidden_size * num_experts
         attn_linear_N = hidden_size * (q_size + k_size + v_size + num_attention_heads * head_dim)
         emd_and_lm_head_N = vocab_size * hidden_size * 2
@@ -263,7 +258,6 @@ class FlopsCounter:
         v_size = num_key_value_heads * head_dim
 
         # non-attn per layer parm
-        # Gemma3 uses GeGLU (gelu_pytorch_tanh), having 3 matrices in MLP (inherited from Gemma2MLP)
         mlp_N = hidden_size * intermediate_size * 3
         attn_linear_N = hidden_size * (q_size + k_size + v_size + num_attention_heads * head_dim)
         emd_and_lm_head_N = vocab_size * hidden_size * 2
@@ -273,15 +267,13 @@ class FlopsCounter:
         dense_N_flops = 6 * dense_N * tokens_sum
 
         # attn all_layer & all_token fwd & bwd flops
-        # Gemma3 alternates between full and sliding window attention based on layer_types
         seqlen_square_sum = 0
 
         layer_types = getattr(self.config, "layer_types", None)
-        sliding_window = getattr(self.config, "sliding_window", 1024)  # default 1024
-        # default pattern: every 6th layer is full
+        sliding_window = getattr(self.config, "sliding_window", 1024)  # デフォルト 1024
         sliding_window_pattern = getattr(self.config, "sliding_window_pattern", 6)
 
-        # If layer_types is not provided, generate it based on sliding_window_pattern
+        # layer_types が提供されていない場合、sliding_window_pattern に基づいて生成
         if layer_types is None and sliding_window is not None and sliding_window_pattern is not None:
             layer_types = [
                 "sliding_attention" if bool((i + 1) % sliding_window_pattern) else "full_attention"
@@ -289,7 +281,6 @@ class FlopsCounter:
             ]
 
         if layer_types:
-            # Calculate attention flops per layer based on attention type
             for layer_idx in range(num_hidden_layers):
                 is_sliding = False
                 if layer_types and layer_idx < len(layer_types):
@@ -297,7 +288,6 @@ class FlopsCounter:
 
                 for seqlen in batch_seqlens:
                     if is_sliding and sliding_window:
-                        # Sliding window limits each token to attend to at most window_size tokens
                         effective_seqlen = min(seqlen, sliding_window)
                         seqlen_square_sum += seqlen * effective_seqlen
                     else:

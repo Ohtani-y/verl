@@ -17,12 +17,30 @@ from mathruler.grader import extract_boxed_content, grade_answer
 
 
 def format_reward(predict_str: str) -> float:
+    """予測文字列のフォーマットが正しいかどうかを評価する報酬関数
+    
+    Args:
+        predict_str: 予測文字列
+        
+    Returns:
+        フォーマットが正しい場合は1.0、そうでなければ0.0
+    """
     pattern = re.compile(r"<think>.*</think>.*\\boxed\{.*\}.*", re.DOTALL)
     match_result = re.fullmatch(pattern, predict_str)
     return 1.0 if match_result else 0.0
 
 
 def acc_reward(predict_str: str, ground_truth: str, use_boxed: bool = True) -> float:
+    """予測の正確性を評価する報酬関数
+    
+    Args:
+        predict_str: 予測文字列
+        ground_truth: 正解文字列
+        use_boxed: boxed形式の答えを抽出するかどうか
+        
+    Returns:
+        正解の場合は1.0、不正解の場合は0.0
+    """
     if use_boxed:
         answer = extract_boxed_content(predict_str)
     else:
@@ -31,6 +49,17 @@ def acc_reward(predict_str: str, ground_truth: str, use_boxed: bool = True) -> f
 
 
 def compute_score(predict_str: str, ground_truth: str, use_boxed: bool = True, format_score: float = 0.1) -> float:
+    """正確性とフォーマットを組み合わせた総合スコアを計算する
+    
+    Args:
+        predict_str: 予測文字列
+        ground_truth: 正解文字列
+        use_boxed: boxed形式の答えを抽出するかどうか
+        format_score: フォーマットスコアの重み
+        
+    Returns:
+        正確性とフォーマットを組み合わせた総合スコア
+    """
     return (1.0 - format_score) * acc_reward(predict_str, ground_truth, use_boxed) + format_score * format_reward(
         predict_str
     )

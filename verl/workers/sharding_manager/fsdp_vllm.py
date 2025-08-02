@@ -53,11 +53,11 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 
 class FSDPVLLMShardingManager(BaseShardingManager):
-    """Sharding manager for FSDP models with vLLM inference engine integration.
+    """FSDP モデルと vLLM 推論エンジン統合のためのシャーディングマネージャー。
 
-    Manages parameter synchronization between FSDP training models and vLLM
-    inference engines, handling both full parameters and LoRA adapters with
-    efficient memory management and device placement.
+    FSDP トレーニングモデルと vLLM 推論エンジン間のパラメータ同期を管理し、
+    効率的なメモリ管理とデバイス配置により、フルパラメータと LoRA アダプターの
+    両方を処理します。
     """
 
     @check_device_is_available()
@@ -74,7 +74,6 @@ class FSDPVLLMShardingManager(BaseShardingManager):
         layered_summon: bool = True,
     ):
         self.module = module
-        # For AsyncLLM, inference_engine and model_runner are defer initialized in vLLMAsyncRollout.load_model
         self.inference_engine = inference_engine
         # self.model_runner = inference_engine.llm_engine.model_executor.driver_worker.worker.model_runner if
         # inference_engine else None
@@ -92,7 +91,6 @@ class FSDPVLLMShardingManager(BaseShardingManager):
         self.load_format = load_format
         self.layered_summon = layered_summon
 
-        # Full params
         self.full_params = full_params
         if full_params and fsdp_version(self.module) == 1:
             FSDP.set_state_dict_type(
@@ -108,12 +106,10 @@ class FSDPVLLMShardingManager(BaseShardingManager):
         self.tp_size = self.device_mesh["infer_tp"].size()
         self.tp_rank = self.device_mesh["infer_tp"].get_local_rank()
 
-        # Note that torch_random_states may be different on each dp rank
         self.torch_random_states = get_torch_device().get_rng_state()
-        # get a random rng states
         if self.device_mesh is not None:
             gen_dp_rank = self.device_mesh["dp"].get_local_rank()
-            get_torch_device().manual_seed(gen_dp_rank + 1000)  # make sure all tp ranks have the same random states
+            get_torch_device().manual_seed(gen_dp_rank + 1000)  # 全ての tp ランクが同じランダム状態を持つことを保証
             self.gen_random_states = get_torch_device().get_rng_state()
             get_torch_device().set_rng_state(self.torch_random_states)
         else:
@@ -127,8 +123,8 @@ class FSDPVLLMShardingManager(BaseShardingManager):
     def __enter__(self):
         def __collect_lora_params() -> OrderedDict:
             """
-            collect lora params or full params if base model is not ready in vllm
-            work with if isinstance(self.module._fsdp_wrapped_module, PeftModel)
+            vllm でベースモデルが準備されていない場合、lora パラメータまたはフルパラメータを収集
+            isinstance(self.module._fsdp_wrapped_module, PeftModel) と連携して動作
             """
             from peft.utils.save_and_load import get_peft_model_state_dict
 
@@ -182,10 +178,6 @@ class FSDPVLLMShardingManager(BaseShardingManager):
                     model = model.to(orig_dev)
             return lora_params
 
-        # NOTE: Basically, we only need `get_torch_device().empty_cache()` before vllm wake_up and
-        # after vllm sleep, since vllm has its own caching memory allocator CuMemAllocator.
-        # Out of vllm scope, we should avoid empty cache to let pytorch using caching memory
-        # to speed up memory allocations.
         #
         # pytorch: https://pytorch.org/docs/stable/notes/cuda.html#memory-management
         # vllm: https://github.com/vllm-project/vllm/blob/v0.7.3/vllm/device_allocator/cumem.py#L103

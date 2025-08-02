@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Utilities for DeepSpeed Ulysses Sequence Parallelism.
+DeepSpeed Ulysses Sequence Parallelism のユーティリティ。
 DeepSpeed Ulysses Paper: https://arxiv.org/abs/2309.14509
 Inspired from: https://github.com/deepspeedai/DeepSpeed/blob/master/deepspeed/sequence/layer.py
 """
@@ -29,7 +29,7 @@ _ULYSSES_SEQUENCE_PARALLEL_GROUP = None
 
 def set_ulysses_sequence_parallel_group(group: dist.ProcessGroup):
     """
-    Set ulysses sequence parallel process group.
+    Ulysses sequence parallel プロセスグループを設定する。
     """
     global _ULYSSES_SEQUENCE_PARALLEL_GROUP
     _ULYSSES_SEQUENCE_PARALLEL_GROUP = group
@@ -37,7 +37,7 @@ def set_ulysses_sequence_parallel_group(group: dist.ProcessGroup):
 
 def get_ulysses_sequence_parallel_group() -> Optional[dist.ProcessGroup]:
     """
-    Get ulysses sequence parallel process group.
+    Ulysses sequence parallel プロセスグループを取得する。
     """
     global _ULYSSES_SEQUENCE_PARALLEL_GROUP
     return _ULYSSES_SEQUENCE_PARALLEL_GROUP
@@ -45,7 +45,7 @@ def get_ulysses_sequence_parallel_group() -> Optional[dist.ProcessGroup]:
 
 def get_ulysses_sequence_parallel_world_size(group: ProcessGroup = None) -> int:
     """
-    Get ulysses sequence parallel world size.
+    Ulysses sequence parallel のワールドサイズを取得する。
     """
     group = get_ulysses_sequence_parallel_group() if group is None else group
     return dist.get_world_size(group) if group else 1
@@ -53,7 +53,7 @@ def get_ulysses_sequence_parallel_world_size(group: ProcessGroup = None) -> int:
 
 def get_ulysses_sequence_parallel_rank(group: ProcessGroup = None) -> int:
     """
-    Get ulysses sequence parallel rank.
+    Ulysses sequence parallel のランクを取得する。
     """
     group = get_ulysses_sequence_parallel_group() if group is None else group
     return dist.get_rank(group) if group else 0
@@ -67,9 +67,9 @@ def gather_seq_scatter_heads(
     group: ProcessGroup = None,
 ) -> Tensor:
     """
-    A func to sync embedding input with alltoall in sequence parallel
-    gather sequence dimension and scatter head dim:
-    e.g. seq_dim: 1, head_dim: 2
+    Sequence parallel で alltoall を使用して embedding 入力を同期する関数
+    sequence 次元を gather し、head 次元を scatter する:
+    例: seq_dim: 1, head_dim: 2
     [bsz, seq/n, h, ...] -> [bsz, seq, h/n, ...]
     """
     group = get_ulysses_sequence_parallel_group() if group is None else group
@@ -85,9 +85,9 @@ def gather_seq_scatter_heads(
 
 def gather_heads_scatter_seq(x: Tensor, head_dim: int, seq_dim: int, group: ProcessGroup = None) -> Tensor:
     """
-    A func to sync attention result with alltoall in sequence parallel
-    gather head dimension and scatter seq dim:
-    e.g. seq_dim: 1, head_dim: 2
+    Sequence parallel で alltoall を使用して attention 結果を同期する関数
+    head 次元を gather し、seq 次元を scatter する:
+    例: seq_dim: 1, head_dim: 2
     [bsz, seq, h/n, ...] -> [bsz, seq/n, h, ...]
     """
     group = get_ulysses_sequence_parallel_group() if group is None else group
@@ -119,11 +119,9 @@ def slice_input_tensor(x: Tensor, dim: int, padding: bool = True, group: Process
     sp_world_size = dist.get_world_size(group)
     sp_rank = get_ulysses_sequence_parallel_rank()
     dim_size = x.size(dim)
-    # pad before slice
     if padding and dim_size % sp_world_size:
         padding_size = sp_world_size - (dim_size % sp_world_size)
         x = _pad_tensor(x, dim, padding_size)
-    # slice the input tensor
     parts = x.size(dim) // sp_world_size
     slc = [slice(None)] * len(x.shape)
     slc[dim] = slice(sp_rank * parts, (sp_rank + 1) * parts)

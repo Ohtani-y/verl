@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Dataset class that enables dynamic data generation strategies between iterations of training.
-This class extends RLHFDataset and uses an AbstractDataGen instance to generate data.
+トレーニングのイテレーション間で動的データ生成戦略を可能にするデータセットクラス。
+このクラスは RLHFDataset を拡張し、AbstractDataGen インスタンスを使用してデータを生成します。
 
-This is especially useful in settings where proposer model generates new tasks based
-on rollout data.
+これは、proposer モデルがロールアウトデータに基づいて新しいタスクを生成する設定で特に有用です。
 """
 
 import logging
@@ -42,19 +41,19 @@ class AbstractDataGenerator(ABC):
     @abstractmethod
     def generate(self, dataset: Dataset) -> datasets.Dataset:
         """
-        Generate method must be implemented by subclasses.
+        generate メソッドはサブクラスで実装する必要があります。
         Args:
-            dataset: The dataset to generate from.
+            dataset: 生成元となるデータセット。
         Returns:
-            Processed data or result as implemented by the subclass.
+            サブクラスで実装された処理済みデータまたは結果。
         """
         pass
 
 
 class MockDataGenerator(AbstractDataGenerator):
     """
-    A noop data gen class that only reappends the first datapoint.
-    This class is useful as a placeholder and testing.
+    最初のデータポイントのみを再追加する何もしないデータ生成クラス。
+    このクラスはプレースホルダーとテストに有用です。
     """
 
     def __init__(self, config: DictConfig = None):
@@ -67,8 +66,8 @@ class MockDataGenerator(AbstractDataGenerator):
 
 class DynamicGenDataset(RLHFDataset):
     """
-    A dataset class that uses a data generation strategy to process data.
-    This class extends RLHFDataset and uses an AbstractDataGen instance to generate data.
+    データ生成戦略を使用してデータを処理するデータセットクラス。
+    このクラスは RLHFDataset を拡張し、AbstractDataGen インスタンスを使用してデータを生成します。
     """
 
     def __init__(
@@ -83,10 +82,8 @@ class DynamicGenDataset(RLHFDataset):
         assert "datagen" in config and config.datagen.get("path", None) is not None, (
             f"datagen path is not set in config: {config}"
         )
-        # Dynamically load the custom datagen class
         datagen_cls = load_extern_type(config.datagen.path, config.datagen.name)
 
-        # Verify that the custom datagen class inherits from AbstractDataGenerator
         abs_cls = AbstractDataGenerator
         if not issubclass(datagen_cls, abs_cls):
             raise TypeError(
@@ -105,8 +102,8 @@ class DynamicGenDataset(RLHFDataset):
 
     def on_batch_end(self, batch: DataProto) -> None:
         """
-        Generate data using the provided data generation strategy.
-        Note: This method is intended to change the dataset after each training batch.
+        提供されたデータ生成戦略を使用してデータを生成します。
+        注意: このメソッドは各トレーニングバッチ後にデータセットを変更することを意図しています。
         """
         new_data = self.data_generator.generate(self)
         self.append_dataframe(new_data)

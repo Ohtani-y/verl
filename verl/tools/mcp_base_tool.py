@@ -36,21 +36,21 @@ class MCPBaseTool(BaseTool):
         self._instance_dict = {}
         self.timeout = config.get("timeout", 30)
 
-        # TODO(hechanghao): create a global client manager to manage the rate limit, client and pool
+        # TODO(hechanghao): レート制限、クライアント、プールを管理するグローバルクライアントマネージャーを作成
         logger.info(f"Initialized MCPBaseTool with config: {config}")
 
     def get_openai_tool_schema(self) -> OpenAIFunctionToolSchema:
-        """Return the OpenAI tool schema."""
+        """OpenAI ツールスキーマを返す。"""
         return self.tool_schema
 
     async def create(self, instance_id: Optional[str] = None, **kwargs) -> str:
-        """Create a tool instance.
+        """ツールインスタンスを作成する。
 
         Args:
-            instance_id: The instance id of the tool.
+            instance_id: ツールのインスタンス ID。
 
         Returns:
-            The instance id of the tool.
+            ツールのインスタンス ID。
         """
         if instance_id is None:
             instance_id = str(uuid4())
@@ -86,10 +86,8 @@ class MCPBaseTool(BaseTool):
         try:
             result_text, metadata = await self._call_tool(instance_id, parameters)
 
-            # Store results in instance dictionary
             self._instance_dict[instance_id]["reward"].append(result_text.strip())
 
-            # Convert metadata to metrics
             metrics = {
                 "query_count": metadata.get("query_count", 0),
                 "status": metadata.get("status", "unknown"),

@@ -27,8 +27,8 @@ PPO_RAY_RUNTIME_ENV = {
 
 def get_ppo_ray_runtime_env():
     """
-    A filter function to return the PPO Ray runtime environment.
-    To avoid repeat of some environment variables that are already set.
+    PPO Ray ランタイム環境を返すフィルター関数。
+    既に設定されている環境変数の重複を避けるため。
     """
     runtime_env = {"env_vars": PPO_RAY_RUNTIME_ENV["env_vars"].copy()}
     for key in list(runtime_env["env_vars"].keys()):

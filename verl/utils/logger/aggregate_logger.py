@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-A Ray logger will receive logging info from different processes.
+Ray ロガーは異なるプロセスからのログ情報を受信します。
 """
 
 import datetime
@@ -34,10 +34,10 @@ def concat_dict_to_str(dict: dict, step):
 
 class LocalLogger:
     """
-    A local logger that logs messages to the console.
+    コンソールにメッセージをログ出力するローカルロガー。
 
     Args:
-        print_to_console (bool): Whether to print to the console.
+        print_to_console (bool): コンソールに出力するかどうか。
     """
 
     def __init__(self, print_to_console=True):
@@ -53,14 +53,14 @@ class LocalLogger:
 
 class DecoratorLoggerBase:
     """
-    Base class for all decorators that log messages.
+    メッセージをログ出力するすべてのデコレータの基底クラス。
 
     Args:
-        role (str): The role (the name) of the logger.
-        logger (logging.Logger): The logger instance to use for logging.
-        level (int): The logging level.
-        rank (int): The rank of the process.
-        log_only_rank_0 (bool): If True, only log for rank 0.
+        role (str): ロガーの役割（名前）。
+        logger (logging.Logger): ログ出力に使用するロガーインスタンス。
+        level (int): ログレベル。
+        rank (int): プロセスのランク。
+        log_only_rank_0 (bool): True の場合、ランク 0 のみログ出力。
     """
 
     def __init__(
@@ -87,7 +87,7 @@ class DecoratorLoggerBase:
 
 
 def print_rank_0(message):
-    """If distributed is initialized, print only on rank 0."""
+    """分散処理が初期化されている場合、ランク 0 でのみ出力。"""
     if torch.distributed.is_initialized():
         if torch.distributed.get_rank() == 0:
             print(message, flush=True)
@@ -96,28 +96,26 @@ def print_rank_0(message):
 
 
 def print_with_rank(message: str, rank: int = 0, log_only_rank_0: bool = False):
-    """_summary_
-    Print a message with rank information.
-    This function prints the message only if `log_only_rank_0` is False or if the rank is 0.
+    """ランク情報付きでメッセージを出力。
+    この関数は `log_only_rank_0` が False またはランクが 0 の場合のみメッセージを出力します。
 
     Args:
-        message (str): _description_
-        rank (int, optional): _description_. Defaults to 0.
-        log_only_rank_0 (bool, optional): _description_. Defaults to False.
+        message (str): 出力するメッセージ。
+        rank (int, optional): プロセスのランク。デフォルトは 0。
+        log_only_rank_0 (bool, optional): True の場合、ランク 0 のみ出力。デフォルトは False。
     """
     if not log_only_rank_0 or rank == 0:
         print(f"[Rank {rank}] {message}", flush=True)
 
 
 def print_with_rank_and_timer(message: str, rank: int = 0, log_only_rank_0: bool = False):
-    """_summary_
-    Print a message with rank information and a timestamp.
-    This function prints the message only if `log_only_rank_0` is False or if the rank is 0.
+    """ランク情報とタイムスタンプ付きでメッセージを出力。
+    この関数は `log_only_rank_0` が False またはランクが 0 の場合のみメッセージを出力します。
 
     Args:
-        message (str): _description_
-        rank (int, optional): _description_. Defaults to 0.
-        log_only_rank_0 (bool, optional): _description_. Defaults to False.
+        message (str): 出力するメッセージ。
+        rank (int, optional): プロセスのランク。デフォルトは 0。
+        log_only_rank_0 (bool, optional): True の場合、ランク 0 のみ出力。デフォルトは False。
     """
     now = datetime.datetime.now()
     message = f"[{now.strftime('%Y-%m-%d %H:%M:%S')}] [Rank {rank}] {message}"

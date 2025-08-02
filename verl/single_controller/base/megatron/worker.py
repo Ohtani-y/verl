@@ -56,7 +56,6 @@ class MegatronWorker(Worker):
         from verl.utils.fs import copy_to_local
         from verl.utils.model import update_model_config
 
-        # Step 1: initialize the tokenizer
         self.local_path = copy_to_local(model_path)
         if tokenizer_or_path is None:
             self.tokenizer = hf_tokenizer(self.local_path, trust_remote_code=trust_remote_code)
@@ -74,10 +73,8 @@ class MegatronWorker(Worker):
             else:
                 self.tokenizer.chat_template = self.config.model.custom_chat_template
 
-        # Step 2: get the hf
         hf_config = AutoConfig.from_pretrained(self.local_path, trust_remote_code=trust_remote_code)
 
-        # Step 3: override the hf config
         override_config_kwargs = {
             "bos_token_id": self.tokenizer.bos_token_id,
             "eos_token_id": self.tokenizer.eos_token_id,

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The concrete Engine implementation using PyTorch FullyShardedDataParallel (FSDP)
+PyTorch FullyShardedDataParallel (FSDP) を使用した具体的な Engine 実装
 """
 
 import gc
@@ -82,23 +82,22 @@ device_name = get_device_name()
 @EngineRegistry.register("fsdp")
 class FSDPEngine(BaseEngine):
     """
-    Concrete Engine implementation using PyTorch FullyShardedDataParallel (FSDP).
+    PyTorch FullyShardedDataParallel (FSDP) を使用した具体的な Engine 実装。
 
-    Supports model sharding, activation/optimizer offloading, LoRA, and sequence parallelism.
+    モデルシャーディング、アクティベーション/オプティマイザオフロード、LoRA、シーケンス並列化をサポート。
     """
 
     def __init__(self, config):
         """
-        Initialize the FSDPEngine.
+        FSDPEngine を初期化する。
 
-        Sets up distributed device meshes, LoRA, and offload policies based on config.
+        設定に基づいて分散デバイスメッシュ、LoRA、オフロードポリシーを設定する。
 
         Args:
-            config: Configuration object with FSDP and model settings.
+            config: FSDP とモデル設定を含む設定オブジェクト。
         """
         self.config = config
         self.rank = torch.distributed.get_rank()
-        # build device mesh for Ulysses Sequence Parallel
         world_size = torch.distributed.get_world_size()
         from torch.distributed.device_mesh import init_device_mesh
 
@@ -116,11 +115,9 @@ class FSDPEngine(BaseEngine):
 
         self.ulysses_sharding_manager = FSDPUlyssesShardingManager(self.ulysses_device_mesh)
 
-        # set FSDP offload params
         self._is_offload_param = self.config.model.fsdp_config.param_offload
         self._is_offload_optimizer = self.config.model.fsdp_config.optimizer_offload
 
-        # normalize config
         self.config.ppo_mini_batch_size *= self.config.rollout_n
         self.config.ppo_mini_batch_size //= torch.distributed.get_world_size() // self.ulysses_sequence_parallel_size
         if self.config.ppo_micro_batch_size is not None:
@@ -146,12 +143,11 @@ class FSDPEngine(BaseEngine):
 
     def init_model(self):
         """
-        Build the model, optimizer, and learning rate scheduler under FSDP.
+        FSDP 下でモデル、オプティマイザ、学習率スケジューラを構築する。
 
-        Applies device, dtype, and precision configurations, including mixed precision.
-        Sets up checkpoint manager and FLOPs counter.
+        混合精度を含むデバイス、dtype、精度設定を適用する。
+        チェックポイントマネージャと FLOPs カウンタを設定する。
         """
-        # This is used to import external_lib into the huggingface systems
         import_external_libs(self.config.model.get("external_lib", None))
 
         self.module, self.optimizer, self.lr_scheduler = self._build_model_optimizer(self.config)
@@ -173,7 +169,6 @@ class FSDPEngine(BaseEngine):
         )
 
     def _build_model_optimizer(self, config):
-        # the following line is necessary
         from torch import optim
         from torch.distributed.fsdp import MixedPrecision
 
@@ -182,8 +177,6 @@ class FSDPEngine(BaseEngine):
 
         use_shm = config.model.get("use_shm", False)
         local_path = copy_to_local(config.model.path, use_shm=use_shm)
-        # note that the tokenizer between actor and critic may be different. So override tokenizer info with actor info
-        # using random initialized model from any architecture. May not be the same as Actor.
 
         tokenizer_path = copy_to_local(config.model.tokenizer_path, use_shm=use_shm)
         self.tokenizer = hf_tokenizer(tokenizer_path, trust_remote_code=config.model.get("trust_remote_code", False))
@@ -216,7 +209,6 @@ class FSDPEngine(BaseEngine):
             trust_remote_code=config.model.get("trust_remote_code", False),
         )
         model_config.num_labels = 1
-        # patch for kimi-vl
         if getattr(model_config, "model_type", None) == "kimi_vl":
             model_config.text_config.topk_method = "greedy"
 

@@ -19,8 +19,8 @@ from verl.single_controller.base.decorator import Dispatch, register
 
 class ActorWorker(Worker):
     """
-    This worker can be instantiated as a standalone actor or a standalone rollout or a standalone reference policy
-    or a hybrid engine based on the config.rollout
+    このワーカーは、config.rollout に基づいて、スタンドアロンアクター、スタンドアロンロールアウト、
+    スタンドアロンリファレンスポリシー、またはハイブリッドエンジンとしてインスタンス化できます
     """
 
     def __init__(self, config):

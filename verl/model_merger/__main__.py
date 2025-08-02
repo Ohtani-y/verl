@@ -13,9 +13,9 @@
 # limitations under the License.
 
 """
-This module is used to merge huggingface model and test verl checkpoints from FSDP and Megatron backends.
+このモジュールは huggingface モデルと FSDP および Megatron バックエンドからの verl チェックポイントをマージするために使用されます。
 
-To merge FSDP checkpoints:
+FSDP チェックポイントをマージするには:
 ```sh
 python -m verl.model_merger merge \
     --backend fsdp \
@@ -23,7 +23,7 @@ python -m verl.model_merger merge \
     --target_dir /path/to/merged_hf_model
 ```
 
-To merge Megatron checkpoints:
+Megatron チェックポイントをマージするには:
 ```sh
 python -m verl.model_merger merge \
     --backend megatron \
@@ -32,7 +32,7 @@ python -m verl.model_merger merge \
     --target_dir /path/to/merged_hf_model
 ```
 
-or use distribtued merge for large models like dpskv3 671B
+または dpskv3 671B のような大規模モデルには分散マージを使用:
 
 ```sh
 torchrun --nproc_per_node 1 --nnodes 8 --node_rank ${RANK} -m verl.model_merger merge\
@@ -42,7 +42,7 @@ torchrun --nproc_per_node 1 --nnodes 8 --node_rank ${RANK} -m verl.model_merger 
 ```
 
 
-For more details, please refer to documentation:
+詳細については、ドキュメントを参照してください:
 https://verl.readthedocs.io/en/latest/advance/checkpoint.html#convert-fsdp-and-megatron-checkpoints-to-huggingface-format-model
 """
 

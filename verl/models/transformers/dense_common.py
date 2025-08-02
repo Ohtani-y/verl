@@ -40,10 +40,10 @@ def forward_base_model(
     cache_position: Optional[torch.LongTensor] = None,
 ) -> CausalLMOutputWithPast:
     r"""
-    Copy paste LLaMa's forward
+    LLaMa の forward をコピー
     https://github.com/linkedin/Liger-Kernel/blob/main/src/liger_kernel/transformers/model/llama.py
 
-    This function should be generic enough for all pure text models.
+    この関数は全ての純粋なテキストモデルに対して十分汎用的であるべきです。
     ```"""
 
     output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
@@ -51,7 +51,6 @@ def forward_base_model(
         output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
     )
 
-    # decoder outputs consists of (dec_features, layer_state, dec_hidden, dec_attn)
     outputs = self.model(
         input_ids=input_ids,
         attention_mask=attention_mask,

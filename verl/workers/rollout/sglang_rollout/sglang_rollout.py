@@ -84,9 +84,7 @@ logger = logging.getLogger(__file__)
 logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 
-# patch to avoid issue https://github.com/sgl-project/sglang/issues/6723
 def _set_envs_and_config(server_args: ServerArgs):
-    # Set global environments
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     os.environ["NCCL_CUMEM_ENABLE"] = "0"
     os.environ["NCCL_NVLS_ENABLE"] = str(int(server_args.enable_nccl_nvls))
@@ -94,25 +92,19 @@ def _set_envs_and_config(server_args: ServerArgs):
     os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "4"
     os.environ["CUDA_MODULE_LOADING"] = "AUTO"
 
-    # Set prometheus env vars
     if server_args.enable_metrics:
         set_prometheus_multiproc_dir()
 
-    # Set ulimit
     set_ulimit()
 
-    # Fix triton bugs
     try:
         from sglang.srt.utils import maybe_set_triton_cache_manager
 
         if server_args.tp_size * server_args.dp_size > 1:
-            # FIXME: remove this after https://github.com/triton-lang/triton/pull/4295 is used as a dependency.
             maybe_set_triton_cache_manager()
     except ImportError:
-        # Fixed in sglang 0.4.9
         pass
 
-    # Check flashinfer version
     if server_args.attention_backend == "flashinfer":
         assert_pkg_version(
             "flashinfer_python",
@@ -126,23 +118,20 @@ def _set_envs_and_config(server_args: ServerArgs):
             "Please reinstall the latest version with `pip install sgl-kernel --force-reinstall`",
         )
 
-    # Set mp start method
     mp.set_start_method("spawn", force=True)
 
 
 sglang.srt.entrypoints.engine._set_envs_and_config = _set_envs_and_config
 
 
-# because chatCompletion is an async method, it makes the whole ray actor be an async actor
-# which can not call loop.run_until_complete. So we need to make the engine to be an async class
+# loop.run_until_complete を呼び出すことができません。そのため、エンジンを非同期クラスにする必要があります
 class AsyncEngine(sglang.srt.entrypoints.engine.Engine):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # default to use dummy load format, which need to reload weights in first time
         self._need_reload = True
 
     async def release_memory_occupation(self, tags: Optional[list[str]] = None):
-        """Release GPU occupation temporarily."""
+        """GPU 占有を一時的に解放します。"""
         if tags is None:
             obj = ReleaseMemoryOccupationReqInput()
         else:

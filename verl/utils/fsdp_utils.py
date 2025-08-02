@@ -65,18 +65,16 @@ def get_init_weight_context_manager(use_meta_tensor=True, mesh: DeviceMesh = Non
 # Copyright 2020-present the HuggingFace Inc. team.
 # Adapted from https://github.com/huggingface/transformers/src/transformers/trainer.py
 def get_fsdp_wrap_policy(module, config=None, is_lora=False):
-    """Get FSDP wrap policy for the module.
+    """モジュール用の FSDP ラップポリシーを取得します。
 
     Args:
-        module: The module to get wrap policy for
-        config: Configuration for wrap policy
-        is_lora: Whether to enable lambda policy for LoRA modules
+        module: ラップポリシーを取得するモジュール
+        config: ラップポリシーの設定
+        is_lora: LoRA モジュール用の lambda ポリシーを有効にするかどうか
     """
     if config is None:
         config = {}
 
-    # NOTE: This is a temporary workaround to be compatible with the OmegaConf & dataclass. We will remove this
-    # once we have make all config in verl from OmegaConf to data class.
     def _get_attr(attr_name, default_value=None):
         if hasattr(config, "get"):
             return config.get(attr_name, default_value)
@@ -97,7 +95,6 @@ def get_fsdp_wrap_policy(module, config=None, is_lora=False):
 
     from torch.distributed.fsdp.wrap import _or_policy, lambda_auto_wrap_policy
 
-    # Add lambda policy for LoRA modules if is_lora is True
     if is_lora:
 
         def lambda_policy_fn(module):
@@ -141,7 +138,6 @@ def offload_fsdp_model_to_cpu(model: FSDP, empty_cache: bool = True):
         return
 
     assert isinstance(model, FSDP)
-    # lazy init FSDP model
     _lazy_init(model, model)
     assert model._is_root, "Only support root model offloading to CPU"
     for handle in model._all_handles:
@@ -154,7 +150,6 @@ def offload_fsdp_model_to_cpu(model: FSDP, empty_cache: bool = True):
             and flat_param.data.size() == flat_param._local_shard.size()
         )
         handle.flat_param_to(torch.device("cpu"), non_blocking=True)
-        # the following still keeps id(._local_shard) != id(.data)
         flat_param._local_shard = flat_param.data
         assert id(flat_param._local_shard) != id(flat_param.data)
     if empty_cache:
@@ -175,7 +170,6 @@ def load_fsdp_model_to_gpu(model: FSDP):
         return
 
     assert isinstance(model, FSDP)
-    # lazy init FSDP model
     _lazy_init(model, model)
     assert model._is_root, "Only support root model loading to GPU"
     device_id = get_device_id()
@@ -184,7 +178,6 @@ def load_fsdp_model_to_gpu(model: FSDP):
             continue
         flat_param = handle.flat_param
         handle.flat_param_to(torch.device(f"{get_device_name()}:{device_id}"), non_blocking=True)
-        # the following still keeps id(._local_shard) != id(.data)
         flat_param._local_shard = flat_param.data
 
 
@@ -221,11 +214,10 @@ def load_fsdp_optimizer(optimizer, device_id):
 @contextmanager
 def meta_device_init():
     """
-    Create model parameters with meta device.
+    meta device でモデルパラメータを作成します。
 
-    Note buffers in model will still be initialized in default device (e.g., CPU),
-    since the buffers can be non-persistent and filled with expected values that can
-    NOT be captured in meta device.
+    モデル内のバッファは、デフォルトデバイス（例：CPU）で初期化されることに注意してください。
+    バッファは非永続的で、meta device では捕捉できない期待値で満たされる可能性があるためです。
     """
     device = torch.device("meta")
     old_register_parameter = nn.Module.register_parameter
@@ -233,8 +225,6 @@ def meta_device_init():
 
     def register_empty_parameter(module, name, param):
         old_register_parameter(module, name, param)
-        # we will skip register shared parameters as it
-        # is already registered previously
         if param is not None and param not in registered:
             param_cls = type(module._parameters[name])
             kwargs = module._parameters[name].__dict__
@@ -252,19 +242,19 @@ def meta_device_init():
 
 def parallel_load_safetensors(filepath):
     """
-    Parallel load safetensors from huggingface checkpoint
+    huggingface チェックポイントから safetensors を並列読み込みします
 
-    Huggingface checkpoint contains:
+    Huggingface チェックポイントには以下が含まれます：
 
-    - config.json: a json file for model configuration
-    - model.safetensor.index.json: a json file for safetensors (parameters & buffers) index
-    - model-000x-of-ooxx.safetensors: a binary file for safetensors (parameters & buffers) chunks
+    - config.json: モデル設定用の json ファイル
+    - model.safetensor.index.json: safetensors（パラメータとバッファ）インデックス用の json ファイル
+    - model-000x-of-ooxx.safetensors: safetensors（パラメータとバッファ）チャンク用のバイナリファイル
 
-    Or (when model is small),
+    または（モデルが小さい場合）、
 
-    - model.safetensors: a binary file for all parameters and buffers
+    - model.safetensors: すべてのパラメータとバッファ用のバイナリファイル
 
-    Each rank will own a part of model chunks and load them directly into GPU memory.
+    各ランクはモデルチャンクの一部を所有し、GPU メモリに直接読み込みます。
     """
     from safetensors.torch import load_file
 
@@ -276,7 +266,6 @@ def parallel_load_safetensors(filepath):
         for param_name, filename in index["weight_map"].items():
             safetensors2param.setdefault(filename, []).append(param_name)
     else:
-        # in this case, the model is small and we can load it all at once
         param_file = os.path.join(filepath, "model.safetensors")
         assert os.path.exists(param_file), f"Cannot find {param_file}"
         states = load_file(param_file)
@@ -308,15 +297,15 @@ def parallel_load_safetensors(filepath):
 
 def parallel_init_module_fn(module: torch.nn.Module, shard_states: dict[str, torch.nn.Parameter]):
     """
-    Generate a function to initialize sub-modules in the `module` with `shard_states`
-    from huggingface checkpoint.
+    huggingface チェックポイントの `shard_states` を使用して `module` 内のサブモジュールを
+    初期化する関数を生成します。
 
     Args:
-        module (torch.nn.Module): the global module to be initialized
-        shard_states (Dict[str, torch.nn.Parameter]): the shard states from huggingface checkpoint
+        module (torch.nn.Module): 初期化するグローバルモジュール
+        shard_states (Dict[str, torch.nn.Parameter]): huggingface チェックポイントからのシャード状態
 
     Returns:
-        init_fn (Callable): a function to initialize sub-modules in the `module` with `shard_states`
+        init_fn (Callable): `shard_states` を使用して `module` 内のサブモジュールを初期化する関数
     """
 
     state2fqn = {}

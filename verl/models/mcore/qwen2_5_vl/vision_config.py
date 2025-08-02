@@ -20,37 +20,35 @@ from megatron.core.transformer import TransformerConfig
 
 
 def get_vision_model_config(config: TransformerConfig) -> TransformerConfig:
-    # Given a Transformer Config from decoder, build vision encoder config
-    # diff: out_hidden_size & intermediate_size
+    # 差分: out_hidden_size & intermediate_size
 
     # mlp: hidden_size -> intermediate_size -> embed_dim, silu
-    # NOTE: here we provide a workaround to solve the wrong layer amount when VPP of decoder is on
     if config.num_layers in [28, 36]:
         config.ffn_hidden_size = 3420
     else:
         config.ffn_hidden_size = 3456
 
     if parallel_state.get_virtual_pipeline_model_parallel_world_size() is not None:
-        config.num_layers = 32 * parallel_state.get_virtual_pipeline_model_parallel_world_size()  # depth
+        config.num_layers = 32 * parallel_state.get_virtual_pipeline_model_parallel_world_size()  # 深度
     else:
-        config.num_layers = 32  # depth
-    config.num_attention_heads = 16  # num_heads
-    config.add_bias_linear = True  # all nn.Linear has bias (MLP, attn)
-    config.add_qkv_bias = True  # qkv_proj in attn has bias
-    config.hidden_size = 1280  # hidden_size
+        config.num_layers = 32  # 深度
+    config.num_attention_heads = 16  # ヘッド数
+    config.add_bias_linear = True  # すべての nn.Linear にバイアスあり (MLP, attn)
+    config.add_qkv_bias = True  # attn の qkv_proj にバイアスあり
+    config.hidden_size = 1280  # 隠れ層サイズ
     config.hidden_dropout = 0.0
     config.attention_dropout = 0.0
 
-    # config.gated_linear_unit = False # no gated
-    # config.activation_func = quick_gelu # hidden_act
+    # config.gated_linear_unit = False # ゲートなし
+    # config.activation_func = quick_gelu # 隠れ層活性化関数
     config.kv_channels = config.hidden_size // config.num_attention_heads
-    config.num_query_groups = config.num_attention_heads  # no GQA
+    config.num_query_groups = config.num_attention_heads  # GQA なし
     config.layernorm_zero_centered_gamma = False  # False
     config.apply_query_key_layer_scaling = False  # factor=math.sqrt(head_dim)
-    config.bias_activation_fusion = False  # no swiglu, set false
-    config.bias_dropout_fusion = False  # no dropout, set false
-    config.attention_softmax_in_fp32 = True  # use True
-    # config.normalization = 'LayerNorm' # use RMSNorm
+    config.bias_activation_fusion = False  # swiglu なし、false に設定
+    config.bias_dropout_fusion = False  # dropout なし、false に設定
+    config.attention_softmax_in_fp32 = True  # True を使用
+    # config.normalization = 'LayerNorm' # RMSNorm を使用
     config.seq_length = 1
 
     config.tp_comm_overlap = False

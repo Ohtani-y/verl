@@ -20,7 +20,7 @@ import torch
 
 def set_basic_config(level):
     """
-    This function sets the global logging format and level. It will be called when import verl
+    この関数はグローバルなログ形式とレベルを設定します。verl をインポートする際に呼び出されます
     """
     logging.basicConfig(format="%(levelname)s:%(asctime)s:%(message)s", level=level)
 

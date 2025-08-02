@@ -71,17 +71,17 @@ class VisionRotaryEmbedding(nn.Module):
 
 
 class Qwen2_5VisionModel(VisionModule):
-    """Qwen2.5 ViT vision model.
+    """Qwen2.5 ViT ビジョンモデル。
 
     Args:
-        transformer_config (TransformerConfig): Transformer config.
-        transformer_layer_spec (ModuleSpec): Specifies module to use for transformer layers.
-        ln_pre_impl (ModuleSpec or type): Specifies the layer norm type to use for ln_pre.
-        add_class_token (bool, optional): Include a class token. Defaults to True.
-        class_token_len (int): Class token length. Defaults to 1 but 8 may be faster.
-        patch_dim (int): Image patch size.
-        img_h (int): Input image height.
-        img_w (int): Input image width.
+        transformer_config (TransformerConfig): Transformer 設定。
+        transformer_layer_spec (ModuleSpec): transformer レイヤーに使用するモジュールを指定。
+        ln_pre_impl (ModuleSpec or type): ln_pre に使用するレイヤー正規化タイプを指定。
+        add_class_token (bool, optional): クラストークンを含めるかどうか。デフォルトは True。
+        class_token_len (int): クラストークンの長さ。デフォルトは 1 だが 8 の方が高速な場合がある。
+        patch_dim (int): 画像パッチサイズ。
+        img_h (int): 入力画像の高さ。
+        img_w (int): 入力画像の幅。
     """
 
     def __init__(
@@ -124,10 +124,7 @@ class Qwen2_5VisionModel(VisionModule):
         self.pre_process = pre_process
         self.post_process = post_process
 
-        # Transformer layers.
-        # TODO: Follow-up changes will make pre and post_process configurable. They are needed for supporting
-        # pipeline parallelism.
-        # NOTE: a final layer norm and/or linear layer present in some implementations are omitted here.
+        # Transformer レイヤー。
         self.decoder = TransformerBlock(
             config=transformer_config,
             spec=transformer_layer_spec,
@@ -149,12 +146,12 @@ class Qwen2_5VisionModel(VisionModule):
         self.input_tensor = None
 
     def set_input_tensor(self, input_tensor: torch.Tensor) -> None:
-        """Sets input tensor to the model.
+        """モデルに入力テンソルを設定する。
 
         Args:
-            input_tensor (Tensor): Sets the input tensor for the model.
+            input_tensor (Tensor): モデル用の入力テンソルを設定。
         """
-        if self.pre_process:  # always True
+        if self.pre_process:  # 常に True
             self.input_tensor = input_tensor
         else:
             raise NotImplementedError()
@@ -251,7 +248,6 @@ class Qwen2_5VisionModel(VisionModule):
         assert self.input_tensor is None
         assert inference_params is None
 
-        # Rotary positional embeddings (embedding is None for PP intermediate devices)
         vision_data = self.patch_embed(vision_data)
         window_index, cu_window_seqlens = self.get_window_index(grid_thw)
         cu_window_seqlens = torch.tensor(

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-The main entry point to run the PPO algorithm
+PPO アルゴリズムを実行するためのメインエントリーポイント
 """
 
 import logging
@@ -69,7 +69,6 @@ class CriticWorker(Worker, DistProfilerExtension):
     @register(dispatch_mode=Dispatch.DP_COMPUTE_PROTO)
     @DistProfiler.annotate(color="cyan")
     def compute_values(self, data: DataProto):
-        # Support all hardwares
         data = data.to(get_device_id())
         micro_batch_size = self.config.forward_micro_batch_size_per_gpu
         data.meta_info["micro_batch_size"] = micro_batch_size
@@ -80,7 +79,7 @@ class CriticWorker(Worker, DistProfilerExtension):
             data = self.engine.shard_data(data=data)
             output = self.engine.infer_batch(data, post_fn=self._post_fn_values)
             response_mask = data.batch["response_mask"]
-            values = output["values"] * response_mask  # Only action tokens have values
+            values = output["values"] * response_mask  # アクショントークンのみが値を持つ
             output = DataProto.from_dict(tensors={"values": values})
 
             output = self.engine.unshard_data(data=output)
@@ -106,7 +105,6 @@ class CriticWorker(Worker, DistProfilerExtension):
             loss_agg_mode=self.config.loss_agg_mode,
         )
         if self.config.use_dynamic_bsz:
-            # relative to the dynamic bsz
             loss = vf_loss * (len(batch) / self.config.ppo_mini_batch_size)
         else:
             gradient_accumulation = self.config.ppo_mini_batch_size // self.config.ppo_micro_batch_size_per_gpu
@@ -124,9 +122,7 @@ class CriticWorker(Worker, DistProfilerExtension):
     @DistProfiler.annotate(color="pink")
     def update_critic(self, data: DataProto):
         metrics = {}
-        # Support all hardwares
         data = data.to(get_device_id())
-        # perform forward computation
         with self.engine.train_mode():
             data = self.engine.shard_data(data=data)
 
@@ -143,8 +139,7 @@ class CriticWorker(Worker, DistProfilerExtension):
                 batch = data.select(batch_keys=select_keys).batch
                 has_multi_modal_inputs = "multi_modal_inputs" in data.non_tensor_batch.keys()
 
-                # Split to make minibatch iterator for updating the actor
-                # See PPO paper for details. https://arxiv.org/abs/1707.06347
+                # 詳細は PPO 論文を参照。https://arxiv.org/abs/1707.06347
                 if has_multi_modal_inputs:
                     num_mini_batches = data.batch.batch_size[0] // self.config.ppo_mini_batch_size
                     non_tensor_select_keys = ["multi_modal_inputs"]
@@ -162,7 +157,6 @@ class CriticWorker(Worker, DistProfilerExtension):
                 self.engine.optimizer_zero_grad()
             delta_time = timer.last
 
-            # TODO: should not access engine's flops_counter
             global_num_tokens = data.meta_info["global_token_num"]
             estimated_flops, promised_flops = self.engine.flops_counter.estimate_flops(global_num_tokens, delta_time)
             metrics["perf/mfu/critic"] = estimated_flops * self.config.ppo_epochs / promised_flops / self.world_size

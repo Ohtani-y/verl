@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-the class of WorkerGroup
+WorkerGroup クラス
 """
 
 import logging
@@ -26,31 +26,31 @@ from .decorator import MAGIC_ATTR, Dispatch, get_predefined_dispatch_fn, get_pre
 
 class ResourcePool:
     """
-    Manages a pool of resources across multiple nodes, tracking process counts and GPU allocations.
-    The class provides methods to calculate world size, local world sizes, and local ranks
-    across all nodes in the pool.
+    複数ノード間でリソースプールを管理し、プロセス数と GPU 割り当てを追跡します。
+    このクラスは、プール内のすべてのノードにわたって world size、local world size、
+    local rank を計算するメソッドを提供します。
     """
 
     def __init__(self, process_on_nodes=None, max_colocate_count: int = 10, n_gpus_per_node=8) -> None:
-        """Initialize the ResourcePool with node processes and GPU configuration.
+        """ノードプロセスと GPU 設定で ResourcePool を初期化します。
 
         Args:
-            process_on_nodes (List[int], optional): List of process counts per node. Defaults to empty list.
-            max_colocate_count (int, optional): Maximum number of processes that can be colocated. Defaults to 10.
-            n_gpus_per_node (int, optional): Number of GPUs available per node. Defaults to 8.
+            process_on_nodes (List[int], optional): ノードごとのプロセス数のリスト。デフォルトは空のリスト。
+            max_colocate_count (int, optional): 同一場所に配置できるプロセスの最大数。デフォルトは 10。
+            n_gpus_per_node (int, optional): ノードごとに利用可能な GPU 数。デフォルトは 8。
         """
         if process_on_nodes is None:
             process_on_nodes = []
         self._store = process_on_nodes
         self.max_colocate_count = max_colocate_count
-        self.n_gpus_per_node = n_gpus_per_node  # this is left for future huawei GPU that contains 16 GPUs per node
+        self.n_gpus_per_node = n_gpus_per_node  # これは将来の Huawei GPU（ノードあたり 16 GPU を含む）のために残されています
 
     def add_node(self, process_count):
         self._store.append(process_count)
 
     @property
     def world_size(self):
-        """Total number of processes across all nodes in the pool."""
+        """プール内のすべてのノードにわたるプロセスの総数。"""
         return sum(self._store)
 
     def __call__(self) -> Any:
@@ -61,23 +61,23 @@ class ResourcePool:
         return self._store
 
     def local_world_size_list(self) -> list[int]:
-        """Returns a flat list where each process has its local world size."""
+        """各プロセスがその local world size を持つフラットなリストを返します。"""
         nested_local_world_size_list = [
             [local_world_size for _ in range(local_world_size)] for local_world_size in self._store
         ]
         return [item for row in nested_local_world_size_list for item in row]
 
     def local_rank_list(self) -> list[int]:
-        """Returns a flat list of local ranks for all processes across all nodes."""
+        """すべてのノードにわたるすべてのプロセスの local rank のフラットなリストを返します。"""
         nested_local_rank_list = [[i for i in range(local_world_size)] for local_world_size in self._store]
         return [item for row in nested_local_rank_list for item in row]
 
 
 class ClassWithInitArgs:
     """
-    Wrapper class that stores constructor arguments for deferred instantiation.
-    This class is particularly useful for remote class instantiation where
-    the actual construction needs to happen at a different time or location.
+    遅延インスタンス化のためにコンストラクタ引数を保存するラッパークラス。
+    このクラスは、実際の構築が異なる時間や場所で行われる必要がある
+    リモートクラスのインスタンス化に特に有用です。
     """
 
     def __init__(self, cls, *args, **kwargs) -> None:

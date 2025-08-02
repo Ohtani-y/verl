@@ -29,28 +29,28 @@ __all__ = ["CriticConfig", "FSDPCriticConfig", "McoreCriticConfig", "FSDPCriticM
 
 @dataclass
 class CriticConfig(BaseConfig):
-    """Configuration for critic model training.
+    """Critic モデルトレーニングの設定。
 
-    The inheritance from BaseConfig provides omegaconf.DictConfig-like interface for a dataclass config.
+    BaseConfig からの継承により、dataclass 設定に omegaconf.DictConfig のようなインターフェースを提供します。
 
     Args:
-        strategy (str): Strategy used for critic model training (fsdp, fsdp2, megatron).
-        ppo_micro_batch_size_per_gpu (int): Local per-GPU micro batch size.
-        rollout_n (int): Number of rollouts per update (mirrors actor rollout_n).
-        optim (Dict[str, Any]): Optimizer configuration including lr, weight_decay, etc.
-        model (Dict[str, Any]): Model configuration including path, tokenizer_path, etc.
-        ppo_mini_batch_size (int): PPO mini-batch size per update.
-        ppo_micro_batch_size (Optional[int]): Global micro batch size (deprecated).
-        use_dynamic_bsz (bool): Whether to automatically adjust batch size at runtime.
-        ppo_max_token_len_per_gpu (int): Max tokens per GPU in one PPO batch.
-        forward_max_token_len_per_gpu (int): Max token length per GPU in forward pass.
-        ppo_epochs (int): Number of PPO epochs per batch.
-        shuffle (bool): Shuffle training data across PPO epochs.
-        cliprange_value (float): PPO value function clipping range.
-        loss_agg_mode (str): Loss aggregation mode.
-        checkpoint (Dict[str, Any]): Checkpoint configuration.
-        profiler (Dict[str, Any]): Profiler configuration.
-        enable (Optional[bool]): Whether to enable the critic.
+        strategy (str): Critic モデルトレーニングに使用する戦略 (fsdp, fsdp2, megatron)。
+        ppo_micro_batch_size_per_gpu (int): ローカル GPU あたりのマイクロバッチサイズ。
+        rollout_n (int): 更新あたりのロールアウト数 (actor rollout_n をミラー)。
+        optim (Dict[str, Any]): lr、weight_decay などを含むオプティマイザ設定。
+        model (Dict[str, Any]): path、tokenizer_path などを含むモデル設定。
+        ppo_mini_batch_size (int): 更新あたりの PPO ミニバッチサイズ。
+        ppo_micro_batch_size (Optional[int]): グローバルマイクロバッチサイズ (非推奨)。
+        use_dynamic_bsz (bool): 実行時にバッチサイズを自動調整するかどうか。
+        ppo_max_token_len_per_gpu (int): 1つの PPO バッチでの GPU あたりの最大トークン数。
+        forward_max_token_len_per_gpu (int): フォワードパスでの GPU あたりの最大トークン長。
+        ppo_epochs (int): バッチあたりの PPO エポック数。
+        shuffle (bool): PPO エポック間でトレーニングデータをシャッフルするかどうか。
+        cliprange_value (float): PPO 価値関数のクリッピング範囲。
+        loss_agg_mode (str): 損失集約モード。
+        checkpoint (Dict[str, Any]): チェックポイント設定。
+        profiler (Dict[str, Any]): プロファイラ設定。
+        enable (Optional[bool]): Critic を有効にするかどうか。
     """
 
     _mutable_fields = BaseConfig._mutable_fields | {
@@ -78,7 +78,7 @@ class CriticConfig(BaseConfig):
     profiler: ProfilerConfig = field(default_factory=ProfilerConfig)
 
     def __post_init__(self):
-        """Validate critic configuration parameters."""
+        """Critic 設定パラメータを検証します。"""
         assert self.strategy != MISSING
         if not self.use_dynamic_bsz:
             self._check_mutually_exclusive(self.ppo_micro_batch_size, self.ppo_micro_batch_size_per_gpu, "critic")
@@ -91,11 +91,11 @@ class CriticConfig(BaseConfig):
                     )
 
     def validate(self, n_gpus: int, train_batch_size: int):
-        """Validate critic configuration with runtime parameters.
+        """実行時パラメータで Critic 設定を検証します。
 
         Args:
-            n_gpus: Total number of GPUs available
-            train_batch_size: Training batch size from data config
+            n_gpus: 利用可能な GPU の総数
+            train_batch_size: データ設定からのトレーニングバッチサイズ
         """
         if not self.use_dynamic_bsz:
             if train_batch_size < self.ppo_mini_batch_size:

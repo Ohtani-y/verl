@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This file contains a Megatron style Hybrid Engine that shares the weights of the actor with the inference engine.
+このファイルには、アクターの重みを推論エンジンと共有する Megatron スタイルの Hybrid Engine が含まれています。
 """
 
 import inspect
@@ -45,38 +45,38 @@ logger.setLevel(os.getenv("VERL_LOGGING_LEVEL", "WARN"))
 
 """
 Megatron Hybrid Engine:
-- During training, only the current pp stage holds the parameters
-- Before inference, broadcast the parameters of the current pp rank 
-   to all other pp ranks (all pp ranks holds all the parameters)
-- Bind the parameters to the inference engine
-- Do inference in tp. pp is treated as additional dp
-- After inference, all the parameters that doesn't belong to this pp rank is freed.
+- トレーニング中は、現在の pp ステージのみがパラメータを保持
+- 推論前に、現在の pp ランクのパラメータを他の全ての pp ランクにブロードキャスト
+   （全ての pp ランクが全パラメータを保持）
+- パラメータを推論エンジンにバインド
+- tp で推論を実行。pp は追加の dp として扱われる
+- 推論後、この pp ランクに属さない全パラメータを解放
 """
 
 
 class MegatronVLLMShardingManager(BaseShardingManager):
-    """A sharding manager that bridges Megatron-LM training with vLLM inference.
+    """Megatron-LM トレーニングと vLLM 推論を橋渡しするシャーディングマネージャー。
 
-    This class handles the parameter sharding and communication between:
-    - Megatron-LM's tensor/expert parallel training setup
-    - vLLM's tensor parallel inference setup
+    このクラスは以下の間でのパラメータシャーディングと通信を処理します：
+    - Megatron-LM のテンソル/エキスパート並列トレーニング設定
+    - vLLM のテンソル並列推論設定
 
-    Key responsibilities:
-    - Manages parameter broadcasting between training and inference configurations
-    - Handles weight conversion between Megatron and HuggingFace formats
-    - Coordinates memory management between training and inference phases
-    - Maintains random state consistency across different parallel groups
+    主な責務：
+    - トレーニングと推論設定間でのパラメータブロードキャストを管理
+    - Megatron と HuggingFace 形式間での重み変換を処理
+    - トレーニングと推論フェーズ間でのメモリ管理を調整
+    - 異なる並列グループ間でのランダム状態の一貫性を維持
 
     Args:
-        actor_module (nn.ModuleList): The Megatron-LM model being trained
-        inference_engine (LLM): The vLLM inference engine
-        model_config: Configuration for the actor's model
-        transformer_config: Transformer-specific configuration for the model
-        rollout_config: Configuration for rollout
-        layer_name_mapping: Mapping between Megatron and HF layer names
-        weight_converter (McoreToHFWeightConverterBase): Converts weights between formats
-        device_mesh: Device mesh for parallel operations
-        offload_param (bool): Whether to offload parameters when not in use
+        actor_module (nn.ModuleList): トレーニング中の Megatron-LM モデル
+        inference_engine (LLM): vLLM 推論エンジン
+        model_config: アクターモデルの設定
+        transformer_config: モデルの Transformer 固有設定
+        rollout_config: ロールアウトの設定
+        layer_name_mapping: Megatron と HF レイヤー名のマッピング
+        weight_converter (McoreToHFWeightConverterBase): 形式間で重みを変換
+        device_mesh: 並列操作用のデバイスメッシュ
+        offload_param (bool): 未使用時にパラメータをオフロードするかどうか
     """
 
     @check_device_is_available()
@@ -97,7 +97,6 @@ class MegatronVLLMShardingManager(BaseShardingManager):
         self.inference_engine = inference_engine
         self.offload_param = offload_param
 
-        # For AsyncLLM, inference_engine and model_runner are defer initialized in vLLMAsyncRollout.load_model
         self.model_runner = (
             self.inference_engine.llm_engine.model_executor.driver_worker.worker.model_runner
             if self.inference_engine
@@ -110,7 +109,6 @@ class MegatronVLLMShardingManager(BaseShardingManager):
         self.layer_name_mapping = layer_name_mapping
         self.weight_converter = weight_converter
         self.bridge = bridge
-        # initialize groups for vllm inference
         self.rank = torch.distributed.get_rank()
         self.world_size = torch.distributed.get_world_size()
 

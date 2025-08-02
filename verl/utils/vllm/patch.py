@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# To support different vLLM versions, we add the model into SUPPORTED_MOE_MODELS separately to avoid triggering
-# unsupported issues.
 SUPPORTED_MOE_MODELS = []
 
 try:
@@ -54,10 +52,6 @@ except ImportError:
 
 
 def patch_vllm_moe_model_weight_loader(model):
-    # this is a work around to load the weight of vllm fused moe model
-    # it is from a bug from vllm 0.8.2
-    # all the weights are supposed to have a weight_loader, but the moe weights
-    # do not have a weight_loader, so we need to patch it
     # (True, 'model.embed_tokens.weight')
     # (True, 'model.layers.0.self_attn.qkv_proj.weight')
     # (True, 'model.layers.0.self_attn.qkv_proj.bias')
@@ -65,13 +59,12 @@ def patch_vllm_moe_model_weight_loader(model):
     # (True, 'model.layers.0.mlp.gate.weight')
     # (True, 'model.layers.0.mlp.shared_expert.gate_up_proj.weight')
     # (True, 'model.layers.0.mlp.shared_expert.down_proj.weight')
-    # (False, 'model.layers.0.mlp.shared_expert_gate.weight')   use default
-    # (False, 'model.layers.0.input_layernorm.weight')          use default
-    # (False, 'model.layers.0.post_attention_layernorm.weight') use default
-    # (False, 'model.layers.0.mlp.experts.w13_weight')          use mlp.experts.weight_loader
-    # (False, 'model.layers.0.mlp.experts.w2_weight')          use mlp.experts.weight_loader
+    # (False, 'model.layers.0.mlp.shared_expert_gate.weight')   デフォルトを使用
+    # (False, 'model.layers.0.input_layernorm.weight')          デフォルトを使用
+    # (False, 'model.layers.0.post_attention_layernorm.weight') デフォルトを使用
+    # (False, 'model.layers.0.mlp.experts.w13_weight')          mlp.experts.weight_loader を使用
+    # (False, 'model.layers.0.mlp.experts.w2_weight')          mlp.experts.weight_loader を使用
 
-    # Define MLP attribute mapping for different model types
     MLP_ATTR_MAPPING = {
         MixtralForCausalLM: "block_sparse_moe",
     }

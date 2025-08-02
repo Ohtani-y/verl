@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Utilities for using tensor_parallel in megatron
+Megatron での tensor_parallel 使用のためのユーティリティ
 """
 
 from typing import TYPE_CHECKING
@@ -129,18 +129,18 @@ class _VocabParallelEntropy(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor) -> torch.Tensor:
         vocab_parallel_logits, softmax_logits, sum_softmax_times_logits = ctx.saved_tensors
-        # reuse softmax_logits as grad
+        # softmax_logits を勾配として再利用
         vocab_parallel_logits.sub_(sum_softmax_times_logits)
         softmax_logits.mul_(vocab_parallel_logits)
         softmax_logits.mul_(grad_output.unsqueeze(dim=-1))
-        # recover vocab_parallel_logits
+        # vocab_parallel_logits を復元
         vocab_parallel_logits.add_(sum_softmax_times_logits)
         softmax_logits.mul_(-1)
         return softmax_logits
 
 
 def vocab_parallel_entropy(vocab_parallel_logits: torch.Tensor) -> torch.Tensor:
-    """Compute entropy when the logits are sharded in tp ranks
+    """tp ランクで logits が分散されている場合のエントロピーを計算
 
     Args:
         vocab_parallel_logits: (total_nnz, vocab_size // tp_size)
@@ -152,16 +152,16 @@ def vocab_parallel_entropy(vocab_parallel_logits: torch.Tensor) -> torch.Tensor:
 
 
 def vocab_parallel_log_probs_from_logits(logits, labels):
-    """TODO(zhangchi.usc1992): We may change the implementation later"""
+    """TODO(zhangchi.usc1992): 後で実装を変更する可能性があります"""
     from megatron.core import tensor_parallel
 
     return -tensor_parallel.vocab_parallel_cross_entropy(vocab_parallel_logits=logits, target=labels)
 
 
 def vocab_parallel_log_probs_from_logits_response_rmpad(input_ids, attention_mask, logits_rmpad, response_length):
-    """Similar to log_probs_from_logits_response_rmpad, but the logits_rmpad is now spliited across tensor parallel
-    region.
-    This will further reduce the peak memory usage during training
+    """log_probs_from_logits_response_rmpad と似ているが、logits_rmpad が tensor parallel
+    領域に分割されている。
+    これによりトレーニング中のピークメモリ使用量をさらに削減する
 
     Args:
         input_ids: [batch_size, seqlen]

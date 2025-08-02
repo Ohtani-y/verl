@@ -40,7 +40,6 @@ class AsyncSGLangServer(AsyncServerBase):
 
     async def init_engine(self):
         if self.workers:
-            # avoid init twice
             return
         all_actors = ray.util.list_named_actors(all_namespaces=True)
         matched_actors = [
@@ -48,7 +47,6 @@ class AsyncSGLangServer(AsyncServerBase):
         ]
 
         gpu_per_node = len(set([actor["name"].split(":")[1] for actor in matched_actors]))
-        # total gpu num
         assert len(matched_actors) == self._dp_size * self._tp_size
 
         for matched_actor in matched_actors:
@@ -70,7 +68,6 @@ class AsyncSGLangServer(AsyncServerBase):
     async def chat_completion(self, raw_request: Request):
         request = await raw_request.json()
 
-        # only send request to master worker in tp rank 0
         output_future = self.master_worker.chat_completion.remote(request)
         [outputs] = await asyncio.gather(output_future)
         return JSONResponse(outputs)

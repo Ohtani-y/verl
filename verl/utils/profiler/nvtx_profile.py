@@ -29,27 +29,27 @@ def mark_start_range(
     domain: Optional[str] = None,
     category: Optional[str] = None,
 ) -> None:
-    """Start a mark range in the profiler.
+    """プロファイラーでマーク範囲を開始します。
 
     Args:
         message (str, optional):
-            The message to be displayed in the profiler. Defaults to None.
+            プロファイラーに表示されるメッセージ。デフォルトは None。
         color (str, optional):
-            The color of the range. Defaults to None.
+            範囲の色。デフォルトは None。
         domain (str, optional):
-            The domain of the range. Defaults to None.
+            範囲のドメイン。デフォルトは None。
         category (str, optional):
-            The category of the range. Defaults to None.
+            範囲のカテゴリ。デフォルトは None。
     """
     return nvtx.start_range(message=message, color=color, domain=domain, category=category)
 
 
 def mark_end_range(range_id: str) -> None:
-    """End a mark range in the profiler.
+    """プロファイラーでマーク範囲を終了します。
 
     Args:
         range_id (str):
-            The id of the mark range to end.
+            終了するマーク範囲の ID。
     """
     return nvtx.end_range(range_id)
 
@@ -60,17 +60,17 @@ def mark_annotate(
     domain: Optional[str] = None,
     category: Optional[str] = None,
 ) -> Callable:
-    """Decorate a function to annotate a mark range along with the function life cycle.
+    """関数のライフサイクルに沿ってマーク範囲を注釈する関数デコレータ。
 
     Args:
         message (str, optional):
-            The message to be displayed in the profiler. Defaults to None.
+            プロファイラーに表示されるメッセージ。デフォルトは None。
         color (str, optional):
-            The color of the range. Defaults to None.
+            範囲の色。デフォルトは None。
         domain (str, optional):
-            The domain of the range. Defaults to None.
+            範囲のドメイン。デフォルトは None。
         category (str, optional):
-            The category of the range. Defaults to None.
+            範囲のカテゴリ。デフォルトは None。
     """
 
     def decorator(func):

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Implement a multiprocess PPOCritic
+マルチプロセス PPOCritic を実装
 """
 
 import logging
@@ -77,7 +77,6 @@ class DataParallelPPOCritic(BasePPOCritic):
                 )  # input_ids_rmpad (total_nnz, ...)
                 input_ids_rmpad = input_ids_rmpad.transpose(0, 1)  # (1, total_nnz)
 
-                # unpad the position_ids to align the rotary
                 if position_ids.dim() == 3:
                     position_ids_rmpad = (
                         index_first_axis(rearrange(position_ids, "c b s ... -> (b s) c ..."), indices)
@@ -89,35 +88,30 @@ class DataParallelPPOCritic(BasePPOCritic):
                         rearrange(position_ids.unsqueeze(-1), "b s ... -> (b s) ..."), indices
                     ).transpose(0, 1)
 
-                # pad and slice the inputs if sp > 1
                 if self.ulysses_sequence_parallel_size > 1:
                     input_ids_rmpad, position_ids_rmpad, pad_size = ulysses_pad_and_slice_inputs(
                         input_ids_rmpad, position_ids_rmpad, sp_size=self.ulysses_sequence_parallel_size
                     )
 
-                # only pass input_ids and position_ids to enable flash_attn_varlen
                 output = self.critic_module(
                     input_ids=input_ids_rmpad,
                     attention_mask=None,
                     position_ids=position_ids_rmpad,
                     **multi_modal_inputs,
                     use_cache=False,
-                )  # prevent model thinks we are generating
+                )  # モデルが生成中だと認識しないようにする
 
                 if hasattr(self.critic_module, "v_head"):
-                    # For trl.AutoModelForCausalLMWithValueHead
                     values_rmpad = output[2].squeeze(0).unsqueeze(-1)
                 else:
                     values_rmpad = output.logits
                     values_rmpad = values_rmpad.squeeze(0)  # (total_nnz)
 
-                # gather output if sp > 1
                 if self.ulysses_sequence_parallel_size > 1:
                     values_rmpad = gather_outputs_and_unpad(
                         values_rmpad, gather_dim=0, unpad_dim=0, padding_size=pad_size
                     )
 
-                # pad it back
                 values = pad_input(values_rmpad, indices=indices, batch=batch, seqlen=seqlen).squeeze(-1)
                 values = values[:, -response_length - 1 : -1]
             else:
@@ -127,9 +121,8 @@ class DataParallelPPOCritic(BasePPOCritic):
                     position_ids=position_ids,
                     **multi_modal_inputs,
                     use_cache=False,
-                )  # prevent model thinks we are generating
+                )  # モデルが生成中だと認識しないようにする
                 if hasattr(self.critic_module, "v_head"):
-                    # For trl.AutoModelForCausalLMWithValueHead
                     values = output[2]
                 else:
                     values = output.logits
@@ -146,7 +139,7 @@ class DataParallelPPOCritic(BasePPOCritic):
         else:
             grad_norm = torch.nn.utils.clip_grad_norm_(self.critic_module.parameters(), max_norm=self.config.grad_clip)
 
-        # if grad_norm is not finite, skip the update
+        # grad_norm が有限でない場合、更新をスキップ
         if not torch.isfinite(grad_norm):
             print(f"WARN: grad_norm is not finite: {grad_norm}")
             self.critic_optimizer.zero_grad()
@@ -188,12 +181,11 @@ class DataParallelPPOCritic(BasePPOCritic):
 
         if "response_mask" in data.batch:
             response_mask = data.batch["response_mask"]
-            values = values * response_mask  # Only action tokens have values
+            values = values * response_mask  # アクショントークンのみが値を持つ
         return values
 
     @GPUMemoryLogger(role="dp critic", logger=logger)
     def update_critic(self, data: DataProto):
-        # make sure we are in training mode
         self.critic_module.train()
         metrics = {}
 
@@ -203,8 +195,7 @@ class DataParallelPPOCritic(BasePPOCritic):
 
         data = data.select(batch_keys=select_keys, non_tensor_batch_keys=non_tensor_select_keys)
 
-        # Split to make minibatch iterator for updating the actor
-        # See PPO paper for details. https://arxiv.org/abs/1707.06347
+        # 詳細は PPO 論文を参照。https://arxiv.org/abs/1707.06347
         mini_batches = data.split(self.config.ppo_mini_batch_size)
 
         for _ in range(self.config.ppo_epochs):
@@ -237,7 +228,6 @@ class DataParallelPPOCritic(BasePPOCritic):
                         loss_agg_mode=self.config.loss_agg_mode,
                     )
                     if self.config.use_dynamic_bsz:
-                        # relative to the dynamic bsz
                         loss = vf_loss * (response_mask.shape[0] / self.config.ppo_mini_batch_size)
                     else:
                         loss = vf_loss / self.gradient_accumulation
